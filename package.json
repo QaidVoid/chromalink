@@ -1,0 +1,5 @@
+{
+  "name": "chromalink",
+  "private": true,
+  "workspaces": ["packages/*"]
+}
