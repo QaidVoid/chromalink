@@ -50,6 +50,7 @@
         "useValidTypeof": "error",
         "useYield": "error"
       },
+      "performance": "error",
       "style": {
         "noCommonJs": "error",
         "noNamespace": "error",
@@ -102,7 +103,10 @@
       "trailingCommas": "all",
       "semicolons": "always"
     },
-    "globals": ["exports"]
+    "globals": ["exports"],
+    "parser": {
+      "unsafeParameterDecoratorsEnabled": true
+    }
   },
   "overrides": [
     {
@@ -137,6 +141,16 @@
             "noVar": "error",
             "noWith": "off",
             "useGetterReturn": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/**/*.service.ts", "src/**/*.controller.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "useImportType": "off"
           }
         }
       }
