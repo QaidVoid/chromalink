@@ -11,15 +11,7 @@ import type { Server, Socket } from "socket.io";
 import { PixelBoardService } from "src/pixel-board/pixel-board.service";
 import { RoomService } from "src/pixel-board/room.service";
 
-@WebSocketGateway({
-  // TODO: remove later
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST"],
-    allowedHeaders: ["*"],
-    credentials: false,
-  },
-})
+@WebSocketGateway()
 export class PixelBoardGateway
   implements OnGatewayConnection, OnGatewayDisconnect
 {
@@ -78,10 +70,10 @@ export class PixelBoardGateway
 
     client.join(roomId);
     this.userRooms.set(client.id, roomId);
+    this.pixelBoardService.addUser(roomId, client.id);
     this.roomService.incrementUserCount(roomId);
 
     client.emit("board-state", this.pixelBoardService.getBoard(roomId));
-    client.emit("users-update", this.pixelBoardService.getUsers(roomId));
     client.emit("room-joined", {
       roomId,
       room: this.roomService.getRoom(roomId),

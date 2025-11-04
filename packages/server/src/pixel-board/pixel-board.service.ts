@@ -66,6 +66,15 @@ export class PixelBoardService {
     roomUsers.set(userId, { id: userId, x, y, color });
   }
 
+  addUser(roomId: string, userId: string) {
+    this.ensureRoom(roomId);
+
+    const roomUsers = this.users.get(roomId);
+    assert(roomUsers, "Room users not found");
+
+    roomUsers.set(userId, { id: userId, x: 0, y: 0, color: "#000000" });
+  }
+
   removeUser(roomId: string, userId: string) {
     const roomUsers = this.users.get(roomId);
 
