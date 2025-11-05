@@ -1,5 +1,5 @@
-import { Injectable } from "@nestjs/common";
 import assert from "node:assert";
+import { Injectable } from "@nestjs/common";
 import type { Pixel, User } from "src/pixel-board/pixel-board.interface";
 
 @Injectable()
@@ -99,5 +99,10 @@ export class PixelBoardService {
     assert(board, "Board not found");
 
     board.clear();
+  }
+
+  deleteRoomData(roomId: string) {
+    this.boards.delete(roomId);
+    this.users.delete(roomId);
   }
 }

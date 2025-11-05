@@ -3,4 +3,7 @@ export interface Room {
   name: string;
   userCount: number;
   createdAt: Date;
+  adminId: string;
+  isLocked: boolean;
+  allowedUsers: Set<string>;
 }
