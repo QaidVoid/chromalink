@@ -61,7 +61,7 @@
   <div
     class="flex-1 flex flex-col items-center justify-center px-6 py-12 text-center relative z-10"
   >
-    <div class="max-w-4xl">
+    <div class="flex flex-col max-w-4xl items-center">
       <h1
         class="text-6xl md:text-8xl font-extrabold mb-6 drop-shadow-2xl"
         style="opacity: {mounted ? 1 : 0}; transform: translateY({mounted
@@ -92,14 +92,15 @@
       </p>
       <button
         onclick={startDrawing}
-        class="px-10 py-4 bg-linear-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold text-lg rounded-full shadow-2xl shadow-purple-500/50 hover:shadow-purple-500/70 transform hover:scale-105 transition-all duration-300"
+        class="px-10 py-4 bg-linear-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold text-lg rounded-full shadow-2xl shadow-purple-500/50 hover:shadow-purple-500/70 transform hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2"
         style="opacity: {mounted ? 1 : 0}; transform: translateY({mounted
           ? 0
           : 20}px) scale({mounted
           ? 1
           : 0.95}); transition: all 0.6s ease-out 0.2s;"
       >
-        ✨ Start Drawing Now
+        <span class="icon-[mdi--sparkles] text-yellow-500"></span>
+        <span>Start Drawing Now</span>
       </button>
       <p
         class="text-sm mt-6 text-gray-400"

@@ -50,9 +50,12 @@
   >
     <div class="text-center mb-10">
       <h1
-        class="text-5xl font-bold bg-linear-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-3"
+        class="text-5xl font-bold bg-linear-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-3 flex items-center justify-center"
       >
-        🎨 Pixel Art Rooms
+        <span
+          class="icon-[mdi--color] mask-(--svg) bg-linear-to-r from-purple-600 to-blue-600"
+        ></span>
+        <span>Pixel Art Rooms</span>
       </h1>
       <p class="text-gray-600 text-lg">Choose a room or create your own</p>
     </div>
@@ -70,42 +73,14 @@
               >
                 {room.name}
               </h3>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="28"
-                height="28"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                class="text-purple-500 group-hover:scale-110 transition-transform"
-              >
-                <path
-                  d="M21 20V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v12a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 20z"
-                ></path>
-                <polyline points="3 14 12 20 21 14"></polyline>
-                <polyline points="3 10 12 4 21 10"></polyline>
-              </svg>
+              <span
+                class="icon-[mdi--image-filter-center-focus-strong-outline] text-blue-600 text-2xl"
+              ></span>
             </div>
             <div class="flex items-center gap-2 text-gray-600">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                <circle cx="9" cy="7" r="4"></circle>
-                <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
-                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-              </svg>
+              <span
+                class="icon-[mdi--account-multiple-outline]"
+              ></span>
               <span class="text-base font-medium">{room.userCount} online</span>
             </div>
           </button>
@@ -116,20 +91,7 @@
         onclick={() => (showCreateRoom = true)}
         class="w-full py-5 bg-linear-to-r from-purple-600 to-blue-600 text-white rounded-2xl hover:from-purple-700 hover:to-blue-700 transition-all font-bold text-lg flex items-center justify-center gap-3 shadow-lg shadow-purple-300/50 hover:shadow-xl hover:shadow-purple-400/50"
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <line x1="12" y1="5" x2="12" y2="19"></line>
-          <line x1="5" y1="12" x2="19" y2="12"></line>
-        </svg>
+        <span class="icon-[mdi--plus]"></span>
         Create New Room
       </button>
     {:else}
