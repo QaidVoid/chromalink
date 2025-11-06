@@ -6,6 +6,7 @@ export interface Pixel {
 
 export interface User {
   id: string;
+  nickname: string;
   x: number;
   y: number;
   color: string;

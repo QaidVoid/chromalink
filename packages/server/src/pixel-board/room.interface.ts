@@ -6,4 +6,5 @@ export interface Room {
   adminId: string;
   isLocked: boolean;
   allowedUsers: Set<string>;
+  password?: string;
 }

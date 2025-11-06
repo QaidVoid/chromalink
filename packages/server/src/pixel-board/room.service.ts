@@ -11,7 +11,12 @@ export class RoomService {
     this.createRoom("art", "Art Studio", "system");
   }
 
-  createRoom(id: string, name: string, adminId: string): Room {
+  createRoom(
+    id: string,
+    name: string,
+    adminId: string,
+    password?: string,
+  ): Room {
     const room: Room = {
       id,
       name,
@@ -20,6 +25,7 @@ export class RoomService {
       adminId,
       isLocked: false,
       allowedUsers: new Set<string>(),
+      password,
     };
     this.rooms.set(id, room);
     return room;
@@ -36,6 +42,7 @@ export class RoomService {
       userCount: room.userCount,
       createdAt: room.createdAt,
       isLocked: room.isLocked,
+      hasPassword: room.password !== undefined,
     }));
   }
 
@@ -109,5 +116,11 @@ export class RoomService {
       return this.rooms.delete(roomId);
     }
     return false;
+  }
+
+  verifyPassword(roomId: string, password: string): boolean {
+    const room = this.rooms.get(roomId);
+    if (!room || !room.password) return true;
+    return room.password === password;
   }
 }

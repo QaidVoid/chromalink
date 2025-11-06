@@ -46,15 +46,36 @@ export class PixelBoardGateway
     }
   }
 
-  @SubscribeMessage("join-room")
-  handleJoinRoom(
-    @MessageBody() data: { roomId: string },
+  @SubscribeMessage("set-nickname")
+  handleSetNickname(
+    @MessageBody() data: { nickname: string },
     @ConnectedSocket() client: Socket,
   ) {
-    const { roomId } = data;
+    const { nickname } = data;
+    this.pixelBoardService.setNickname(client.id, nickname);
+
+    const roomId = this.userRooms.get(client.id);
+    if (roomId) {
+      this.server
+        .to(roomId)
+        .emit("users-update", this.pixelBoardService.getUsers(roomId));
+    }
+  }
+
+  @SubscribeMessage("join-room")
+  handleJoinRoom(
+    @MessageBody() data: { roomId: string; password?: string },
+    @ConnectedSocket() client: Socket,
+  ) {
+    const { roomId, password } = data;
 
     if (!this.roomService.roomExists(roomId)) {
       client.emit("error", "Room does not exist");
+      return;
+    }
+
+    if (!this.roomService.verifyPassword(roomId, password || "")) {
+      client.emit("password-incorrect", { roomId });
       return;
     }
 
@@ -88,6 +109,7 @@ export class PixelBoardGateway
       room: {
         ...room,
         isAdmin,
+        password: undefined,
       },
     });
 
@@ -99,17 +121,26 @@ export class PixelBoardGateway
 
   @SubscribeMessage("create-room")
   handleCreateRoom(
-    @MessageBody() data: { roomId: string; roomName: string },
+    @MessageBody() data: {
+      roomId: string;
+      roomName: string;
+      password?: string;
+    },
     @ConnectedSocket() client: Socket,
   ) {
-    const { roomId, roomName } = data;
+    const { roomId, roomName, password } = data;
 
     if (this.roomService.roomExists(roomId)) {
       client.emit("error", "Room already exists");
       return;
     }
 
-    const room = this.roomService.createRoom(roomId, roomName, client.id);
+    const room = this.roomService.createRoom(
+      roomId,
+      roomName,
+      client.id,
+      password && password.trim() !== "" ? password : undefined,
+    );
     this.server.emit("rooms-list", this.roomService.getAllRooms());
     client.emit("room-created", room);
   }

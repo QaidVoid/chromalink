@@ -6,6 +6,7 @@ import type { Pixel, User } from "src/pixel-board/pixel-board.interface";
 export class PixelBoardService {
   private boards: Map<string, Map<string, string>> = new Map();
   private users: Map<string, Map<string, User>> = new Map();
+  private nicknames: Map<string, string> = new Map();
   private readonly BOARD_WIDTH = 48;
   private readonly BOARD_HEIGHT = 48;
 
@@ -63,7 +64,8 @@ export class PixelBoardService {
     const roomUsers = this.users.get(roomId);
     assert(roomUsers, "Room users not found");
 
-    roomUsers.set(userId, { id: userId, x, y, color });
+    const nickname = this.getNickname(userId);
+    roomUsers.set(userId, { id: userId, nickname, x, y, color });
   }
 
   addUser(roomId: string, userId: string) {
@@ -72,7 +74,15 @@ export class PixelBoardService {
     const roomUsers = this.users.get(roomId);
     assert(roomUsers, "Room users not found");
 
-    roomUsers.set(userId, { id: userId, x: 0, y: 0, color: "#000000" });
+    const nickname = this.getNickname(userId);
+
+    roomUsers.set(userId, {
+      id: userId,
+      nickname,
+      x: 0,
+      y: 0,
+      color: "#000000",
+    });
   }
 
   removeUser(roomId: string, userId: string) {
@@ -104,5 +114,13 @@ export class PixelBoardService {
   deleteRoomData(roomId: string) {
     this.boards.delete(roomId);
     this.users.delete(roomId);
+  }
+
+  setNickname(userId: string, nickname: string) {
+    this.nicknames.set(userId, nickname);
+  }
+
+  getNickname(userId: string): string {
+    return this.nicknames.get(userId) || "Anonymous";
   }
 }
