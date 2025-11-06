@@ -1,5 +1,15 @@
 import { io, type Socket } from "socket.io-client";
-import { currentRoom, cursors, pixels, rooms, userCount } from "./stores";
+import {
+  currentRoom,
+  cursors,
+  isAdmin,
+  isRoomLocked,
+  pixels,
+  rooms,
+  showError,
+  users,
+} from "./stores";
+import { leaveRoom } from "$lib/utils";
 
 let socket: Socket | null = null;
 
@@ -12,6 +22,8 @@ export const initSocket = () => {
 
   socket.on("room-joined", (data) => {
     currentRoom.set(data.room);
+    isAdmin.set(data.room.isAdmin || false);
+    isRoomLocked.set(data.room.isLocked || false);
   });
 
   socket.on("board-state", (boardPixels) => {
@@ -40,11 +52,33 @@ export const initSocket = () => {
     }, 100);
   });
 
-  socket.on("users-update", (users) => {
-    userCount.set(users.length);
+  socket.on("users-update", (data) => {
+    users.set(data);
   });
 
   socket.on("board-cleared", () => pixels.set({}));
+
+  socket.on("error", (message: string) => {
+    showError(message);
+  });
+
+  socket.on("room-locked", () => {
+    showError("This room is locked. Only the admin can invite users.");
+  });
+
+  socket.on("room-locked-status", (data) => {
+    isRoomLocked.set(data.isLocked);
+  });
+
+  socket.on("kicked-from-room", () => {
+    showError("You have been kicked from this room by the admin.");
+    leaveRoom();
+  });
+
+  socket.on("room-deleted", () => {
+    showError("This room has been deleted by the admin.");
+    leaveRoom();
+  });
 
   return socket;
 };

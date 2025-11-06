@@ -73,14 +73,17 @@
               >
                 {room.name}
               </h3>
-              <span
-                class="icon-[mdi--image-filter-center-focus-strong-outline] text-blue-600 text-2xl"
-              ></span>
+              {#if room.isLocked}
+                <span class="icon-[mdi--lock-outline] text-orange-600 text-2xl"
+                ></span>
+              {:else}
+                <span
+                  class="icon-[mdi--lock-open-outline] text-blue-600 text-2xl"
+                ></span>
+              {/if}
             </div>
             <div class="flex items-center gap-2 text-gray-600">
-              <span
-                class="icon-[mdi--account-multiple-outline]"
-              ></span>
+              <span class="icon-[mdi--account-multiple-outline]"></span>
               <span class="text-base font-medium">{room.userCount} online</span>
             </div>
           </button>

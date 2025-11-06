@@ -59,7 +59,7 @@ export class RoomService {
 
   isAdmin(roomId: string, userId: string): boolean {
     const room = this.rooms.get(roomId);
-    return room?.adminId === userId || room?.adminId === "system";
+    return room?.adminId === userId;
   }
 
   lockRoom(roomId: string): boolean {

@@ -4,13 +4,14 @@
   import { getSocket } from "$lib/socket";
   import {
     currentRoom,
-    cursors,
-    pixels,
+    isAdmin,
+    isRoomLocked,
     selectedColor,
-    userCount,
+    users,
   } from "$lib/stores";
   import { onDestroy, onMount } from "svelte";
   import type { PageProps } from "./$types";
+  import { leaveRoom, resetState } from "$lib/utils";
 
   let colors = [
     "#FF6B6B",
@@ -44,19 +45,23 @@
   });
 
   onDestroy(() => {
-    currentRoom.set(null);
-    userCount.set(0);
-    pixels.set({});
-    cursors.set({});
+    resetState();
   });
 
-  const leaveRoom = () => {
-    currentRoom.set(null);
-    userCount.set(0);
-    pixels.set({});
-    cursors.set({});
+  const lockRoom = () => {
+    getSocket()?.emit("lock-room");
+  };
 
-    goto("/join");
+  const unlockRoom = () => {
+    getSocket()?.emit("unlock-room");
+  };
+
+  const kickUser = (userId: string) => {
+    getSocket()?.emit("kick-user", { userId });
+  };
+
+  const deleteRoom = () => {
+    getSocket()?.emit("delete-room");
   };
 
   const clearBoard = () => {
@@ -75,126 +80,195 @@
 </script>
 
 <div
-  class="min-h-screen bg-linear-to-br from-slate-50 via-purple-50 to-blue-50 p-8 relative overflow-hidden"
+  class="h-screen flex flex-col bg-linear-to-br from-slate-50 via-purple-50 to-blue-50 overflow-hidden"
 >
-  <div class="absolute inset-0 overflow-hidden pointer-events-none opacity-20">
-    <div
-      class="absolute top-20 left-10 w-96 h-96 bg-purple-300 rounded-full blur-3xl"
-    ></div>
-    <div
-      class="absolute bottom-20 right-10 w-96 h-96 bg-blue-300 rounded-full blur-3xl"
-    ></div>
-  </div>
-
-  <div class="max-w-7xl mx-auto relative z-10">
-    <div class="bg-white rounded-3xl shadow-2xl p-8 border border-purple-100">
-      <div class="flex items-center justify-between mb-8">
-        <div>
-          <h1
-            class="text-5xl font-bold bg-linear-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-2"
-          >
-            {$currentRoom?.name || "Pixel Art Board"}
-          </h1>
-          <p class="text-gray-600 text-lg">Draw together in real-time</p>
-        </div>
-        <div class="flex items-center gap-4">
-          <div
-            class="flex items-center gap-3 bg-linear-to-r from-blue-50 to-purple-50 px-6 py-3 rounded-full border-2 border-blue-200 shadow-sm"
-          >
-            <span class="icon-[mdi--account-multiple-outline]"></span>
-            <span class="font-bold text-blue-600 text-lg"
-              >{$userCount} online</span
-            >
-          </div>
-          <button
-            onclick={leaveRoom}
-            class="flex items-center gap-2 px-6 py-3 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors border-2 border-gray-300 hover:border-gray-400 shadow-sm"
-          >
-            <span class="icon-[mdi--logout]"></span>
-            <span class="font-bold text-gray-700">Leave</span>
-          </button>
-        </div>
+  <div
+    class="shrink-0 bg-white border-b-2 border-purple-100 shadow-md px-6 py-4"
+  >
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <h1
+          class="text-3xl font-bold bg-linear-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent flex items-center gap-2"
+        >
+          {$currentRoom?.name || "Pixel Art Board"}
+          {#if $isRoomLocked}
+            <span class="icon-[mdi--lock-outline] text-orange-500 text-xl"
+            ></span>
+          {/if}
+        </h1>
       </div>
 
-      <div class="flex gap-8">
-        <div class="flex-1">
-          <div
-            class="bg-linear-to-br from-slate-100 to-purple-100 p-4 rounded-2xl shadow-inner border-2 border-purple-200"
+      <div class="flex items-center gap-3">
+        {#if $isAdmin}
+          <button
+            onclick={clearBoard}
+            class="flex items-center gap-2 px-4 py-2 bg-red-400 hover:bg-red-500 text-white rounded-lg transition-colors shadow-sm text-sm font-medium"
+            title="Clear Board"
           >
-            <Canvas />
+            <span class="icon-[mdi--trash-outline]"></span>
+            Clear
+          </button>
+
+          {#if $isRoomLocked}
+            <button
+              onclick={unlockRoom}
+              class="flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors shadow-sm text-sm font-medium"
+              title="Unlock Room"
+            >
+              <span class="icon-[mdi--lock-open-outline]"></span>
+              Unlock
+            </button>
+          {:else}
+            <button
+              onclick={lockRoom}
+              class="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-colors shadow-sm text-sm font-medium"
+              title="Lock Room"
+            >
+              <span class="icon-[mdi--lock-outline]"></span>
+              Lock
+            </button>
+          {/if}
+
+          <button
+            onclick={deleteRoom}
+            class="w-full flex items-center gap-2 px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors text-sm font-medium"
+          >
+            <span class="icon-[mdi--delete-outline]"></span>
+            Delete Room
+          </button>
+
+          <div class="h-8 w-px bg-gray-300"></div>
+        {/if}
+
+        <div
+          class="flex items-center gap-2 bg-blue-50 px-4 py-2 rounded-lg border border-blue-200"
+        >
+          <span class="icon-[mdi--account-multiple-outline] text-blue-600"
+          ></span>
+          <span class="font-bold text-blue-600">{$users.length}</span>
+        </div>
+
+        <button
+          onclick={downloadImage}
+          class="flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors shadow-sm font-medium"
+        >
+          <span class="icon-[mdi--tray-download]"></span>
+          Download
+        </button>
+
+        <button
+          onclick={leaveRoom}
+          class="flex items-center gap-2 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors shadow-sm font-medium"
+        >
+          <span class="icon-[mdi--logout]"></span>
+          Leave
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="flex-1 flex overflow-hidden">
+    <div class="flex-1 flex items-center justify-center p-4">
+      <div class="h-full w-full flex items-center justify-center">
+        <div
+          class="bg-white rounded-xl shadow-xl p-3 border-2 border-purple-200 max-h-full flex items-center justify-center"
+        >
+          <Canvas />
+        </div>
+      </div>
+    </div>
+
+    <div
+      class="w-80 shrink-0 bg-white border-l-2 border-purple-100 shadow-lg overflow-y-auto"
+    >
+      <div class="p-6 space-y-6">
+        <div>
+          <div class="flex items-center gap-2 mb-4">
+            <span class="icon-[mdi--palette] text-purple-600 text-xl"></span>
+            <h2 class="text-xl font-bold text-gray-800">Colors</h2>
           </div>
-          <div class="flex gap-4 mt-6">
-            <button
-              onclick={clearBoard}
-              class="flex items-center gap-2 px-7 py-4 bg-linear-to-r from-red-500 to-red-600 text-white rounded-xl hover:from-red-600 hover:to-red-700 transition-all shadow-lg shadow-red-200 hover:shadow-xl font-bold"
-            >
-              <span class="icon-[mdi--trash-outline]"></span>
-              Clear Board
-            </button>
-            <button
-              onclick={downloadImage}
-              class="flex items-center gap-2 px-7 py-4 bg-linear-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transition-all shadow-lg shadow-green-200 hover:shadow-xl font-bold"
-            >
-              <span class="icon-[mdi--tray-download]"></span>
-              Download
-            </button>
+          <div class="grid grid-cols-4 gap-2 mb-4">
+            {#each colors as color}
+              <button
+                onclick={() => selectedColor.set(color)}
+                class={`w-full aspect-square rounded-lg transition-all hover:scale-105 ${
+                  $selectedColor === color
+                    ? "ring-4 ring-purple-500 scale-105 shadow-lg"
+                    : "ring-2 ring-gray-200 hover:ring-purple-300"
+                }`}
+                style={`background-color: ${color}`}
+                aria-label={color}
+              ></button>
+            {/each}
+          </div>
+          <div class="p-3 bg-purple-50 rounded-lg border border-purple-200">
+            <p class="text-xs text-gray-600 mb-2 font-medium">Selected</p>
+            <div class="flex items-center gap-3">
+              <div
+                class="w-12 h-12 rounded-lg ring-2 ring-gray-300 shadow-sm shrink-0"
+                style={`background-color: ${$selectedColor}`}
+              ></div>
+              <span class="font-mono text-sm font-bold text-gray-700"
+                >{$selectedColor}</span
+              >
+            </div>
           </div>
         </div>
 
-        <div class="w-80">
-          <div
-            class="bg-linear-to-br from-slate-50 to-purple-50 rounded-2xl p-7 shadow-lg border-2 border-purple-200"
+        <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+          <p
+            class="text-sm text-blue-800 font-bold mb-2 flex items-center gap-1"
           >
-            <div class="flex items-center gap-3 mb-6">
-              <span class="icon-[mdi--color] text-purple-600 text-2xl"></span>
-              <h2 class="text-2xl font-bold text-gray-800">Color Palette</h2>
-            </div>
-            <div class="grid grid-cols-4 gap-3 mb-6">
-              {#each colors as color}
-                <button
-                  onclick={() => selectedColor.set(color)}
-                  class={`w-14 h-14 rounded-xl transition-all hover:scale-110 shadow-md ${
-                    $selectedColor === color
-                      ? "ring-4 ring-purple-500 scale-110 shadow-lg"
-                      : "ring-2 ring-gray-300 hover:ring-purple-300"
-                  }`}
-                  style={`background-color: ${color}`}
-                  aria-label={color}
-                ></button>
-              {/each}
-            </div>
-            <div
-              class="p-5 bg-white rounded-xl shadow-sm border border-purple-100 mb-6"
+            <span class="icon-[mdi--lightbulb-outline] text-yellow-500"></span>
+            Quick Tips
+          </p>
+          <ul class="text-xs text-blue-700 space-y-1.5">
+            <li>• Click to paint pixels</li>
+            <li>• Choose colors from palette</li>
+            <li>• See live collaboration</li>
+            <li>• Download when done</li>
+          </ul>
+        </div>
+
+        {#if $isAdmin}
+          <div class="p-4 bg-slate-50 rounded-lg border-2 border-slate-200">
+            <p
+              class="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2"
             >
-              <p class="text-sm text-gray-600 mb-3 font-semibold">
-                Selected Color
-              </p>
-              <div class="flex items-center gap-4">
+              <span class="icon-[mdi--account-group]"></span>
+              Users ({$users.length})
+            </p>
+            <div class="space-y-2 max-h-48 overflow-y-auto">
+              {#each $users as user}
                 <div
-                  class="w-20 h-20 rounded-xl ring-2 ring-gray-300 shadow-md"
-                  style={`background-color: ${$selectedColor}`}
-                ></div>
-                <span class="font-mono text-xl font-bold text-gray-700"
-                  >{$selectedColor}</span
+                  class="flex items-center justify-between p-2 bg-white rounded-lg border border-slate-200"
                 >
-              </div>
-            </div>
-            <div
-              class="p-5 bg-linear-to-br from-blue-50 to-purple-50 rounded-xl border border-blue-200"
-            >
-              <p class="text-base text-blue-800 font-bold mb-3 flex items-center">
-                <span class="icon-[mdi--lightbulb] text-yellow-400"></span>
-                <span>Quick Tips</span>
-              </p>
-              <ul class="text-sm text-blue-700 space-y-2 leading-relaxed">
-                <li>• Click and drag to draw</li>
-                <li>• Select colors from palette</li>
-                <li>• See others drawing live</li>
-                <li>• Download your masterpiece</li>
-              </ul>
+                  <div class="flex items-center gap-2 min-w-0 flex-1">
+                    <span class="icon-[mdi--account] text-slate-600 shrink-0"
+                    ></span>
+                    <span class="text-sm text-slate-700 truncate"
+                      >{user.id}</span
+                    >
+                  </div>
+                  {#if user.id !== getSocket()?.id}
+                    <button
+                      onclick={() => kickUser(user.id)}
+                      class="shrink-0 p-1.5 bg-red-500 hover:bg-red-600 text-white rounded transition-colors ml-2"
+                      title="Kick {user.id}"
+                    >
+                      <span class="icon-[mdi--close] text-xs"></span>
+                    </button>
+                  {/if}
+                </div>
+              {/each}
+              {#if $users.length === 0}
+                <p class="text-xs text-slate-500 text-center py-2">
+                  No users online
+                </p>
+              {/if}
             </div>
           </div>
-        </div>
+        {/if}
       </div>
     </div>
   </div>

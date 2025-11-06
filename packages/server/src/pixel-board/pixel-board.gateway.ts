@@ -152,6 +152,7 @@ export class PixelBoardGateway
 
     this.roomService.unlockRoom(roomId);
     this.server.to(roomId).emit("room-locked-status", { isLocked: false });
+    this.server.emit("rooms-list", this.roomService.getAllRooms());
   }
 
   @SubscribeMessage("kick-user")
