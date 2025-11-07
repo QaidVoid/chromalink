@@ -5,12 +5,14 @@ type Room = {
   name: string;
   userCount: number;
   isLocked: boolean;
+  hasPassword: boolean;
 };
 
 type Pixel = { x: number; y: number; color: string };
 
 type User = {
   id: string;
+  nickname: string;
 };
 
 export const pixels = writable<Record<string, string>>({});
@@ -22,6 +24,7 @@ export const isDrawing = writable(false);
 export const rooms = writable<Room[]>([]);
 export const isAdmin = writable(false);
 export const isRoomLocked = writable(false);
+export const nickname = writable("");
 
 export const toast = writable<{
   message: string;

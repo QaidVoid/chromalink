@@ -1,12 +1,18 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { getSocket, initSocket } from "$lib/socket";
-  import { currentRoom, rooms } from "$lib/stores";
+  import { currentRoom, nickname, rooms } from "$lib/stores";
   import { onMount } from "svelte";
 
   let showCreateRoom = $state(false);
   let newRoomId = $state("");
   let newRoomName = $state("");
+  let newRoomPassword = $state("");
+  let selectedRoomId = $state("");
+  let showPasswordModal = $state(false);
+  let password = $state("");
+  let showNicknameModal = $state($nickname.trim().length === 0);
+  let newNickname = $state("");
 
   onMount(() => {
     const socket = initSocket();
@@ -16,8 +22,31 @@
     });
   });
 
-  const joinRoom = (roomId: string) => {
-    getSocket()?.emit("join-room", { roomId });
+  const setUserNickname = () => {
+    if (newNickname.trim()) {
+      getSocket()?.emit("set-nickname", { nickname: newNickname });
+      showNicknameModal = false;
+      nickname.set(newNickname);
+    }
+  };
+
+  const joinRoom = (roomId: string, hasPassword: boolean) => {
+    if (hasPassword) {
+      selectedRoomId = roomId;
+      showPasswordModal = true;
+      password = "";
+    } else {
+      getSocket()?.emit("join-room", { roomId });
+    }
+  };
+
+  const joinRoomWithPassword = () => {
+    if (selectedRoomId && password.trim()) {
+      getSocket()?.emit("join-room", { roomId: selectedRoomId, password });
+      showPasswordModal = false;
+      password = "";
+      selectedRoomId = "";
+    }
   };
 
   const createRoom = () => {
@@ -25,13 +54,54 @@
       getSocket()?.emit("create-room", {
         roomId: newRoomId,
         roomName: newRoomName,
+        ...(newRoomPassword && { password: newRoomPassword }),
       });
       newRoomId = "";
       newRoomName = "";
       showCreateRoom = false;
     }
   };
+
+  const closePasswordModal = () => {
+    showPasswordModal = false;
+    password = "";
+    selectedRoomId = "";
+  };
 </script>
+
+{#if showNicknameModal}
+  <div class="min-h-screen bg-linear-to-br from-purple-100 to-blue-100 flex items-center justify-center p-8">
+    <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
+      <div class="text-center mb-6">
+        <div class="w-12 h-12 bg-linear-to-r from-purple-600 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+          <span class="icon-[mdi--account-outline] text-white text-2xl"></span>
+        </div>
+        <h1 class="text-3xl font-bold text-gray-800 mb-2">
+          Welcome!
+        </h1>
+        <p class="text-gray-600">Choose your nickname</p>
+      </div>
+
+      <div class="space-y-4">
+        <input
+          type="text"
+          bind:value={newNickname}
+          onkeypress={(e) => e.key === 'Enter' && setUserNickname()}
+          placeholder="Enter your nickname..."
+          maxlength={20}
+          class="w-full px-4 py-3 border-2 border-purple-300 rounded-lg focus:border-purple-500 focus:outline-none text-lg"
+        />
+        <button
+          onclick={setUserNickname}
+          disabled={!newNickname.trim()}
+          class="w-full py-3 bg-linear-to-r from-purple-500 to-blue-500 text-white rounded-lg hover:from-purple-600 hover:to-blue-600 transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Continue
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
 
 <div
   class="min-h-screen bg-linear-to-br from-slate-50 via-purple-50 to-blue-50 flex items-center justify-center p-8 relative overflow-hidden"
@@ -44,6 +114,56 @@
       class="absolute bottom-20 right-10 w-96 h-96 bg-blue-300 rounded-full blur-3xl"
     ></div>
   </div>
+
+  {#if showPasswordModal}
+    <div
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+    >
+      <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
+        <div class="text-center mb-6">
+          <h2 class="text-2xl font-bold text-gray-800 mb-2">
+            Enter Room Password
+          </h2>
+          <p class="text-gray-600">This room is protected with a password</p>
+        </div>
+
+        <div class="space-y-4">
+          <div>
+            <label
+              for="password"
+              class="block text-sm font-medium text-gray-700 mb-2"
+            >
+              Password
+            </label>
+            <input
+              id="password"
+              type="password"
+              bind:value={password}
+              placeholder="Enter password..."
+              class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:outline-none transition-colors"
+              onkeypress={(e) => e.key === "Enter" && joinRoomWithPassword()}
+            />
+          </div>
+
+          <div class="flex gap-3 pt-2">
+            <button
+              onclick={joinRoomWithPassword}
+              disabled={!password}
+              class="flex-1 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all font-bold"
+            >
+              Join Room
+            </button>
+            <button
+              onclick={closePasswordModal}
+              class="flex-1 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-all font-bold"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  {/if}
 
   <div
     class="bg-white rounded-3xl shadow-2xl p-10 max-w-3xl w-full relative z-10 border border-purple-100"
@@ -64,8 +184,8 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
         {#each $rooms as room}
           <button
-            onclick={() => joinRoom(room.id)}
-            class="p-7 bg-linear-to-br from-slate-50 to-purple-50 rounded-2xl hover:from-purple-50 hover:to-blue-50 transition-all border-2 border-purple-200 hover:border-purple-400 hover:shadow-xl hover:shadow-purple-200/50 text-left group"
+            onclick={() => joinRoom(room.id, room.hasPassword)}
+            class="relative p-7 bg-linear-to-br from-slate-50 to-purple-50 rounded-2xl hover:from-purple-50 hover:to-blue-50 transition-all border-2 border-purple-200 hover:border-purple-400 hover:shadow-xl hover:shadow-purple-200/50 text-left group"
           >
             <div class="flex items-center justify-between mb-3">
               <h3
@@ -86,6 +206,15 @@
               <span class="icon-[mdi--account-multiple-outline]"></span>
               <span class="text-base font-medium">{room.userCount} online</span>
             </div>
+
+            {#if room.hasPassword}
+              <div
+                class="absolute bottom-3 right-3 flex items-center gap-1 text-yellow-600"
+              >
+                <span class="icon-[mdi--key] text-sm"></span>
+                <span class="text-xs font-medium">Protected</span>
+              </div>
+            {/if}
           </button>
         {/each}
       </div>
@@ -121,6 +250,19 @@
           <input
             id="room-name"
             bind:value={newRoomName}
+            placeholder="My Awesome Room"
+            class="w-full px-5 py-4 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:outline-none text-lg transition-colors"
+          />
+        </div>
+        <div>
+          <label
+            for="room-password"
+            class="block text-base font-bold text-gray-700 mb-3"
+            >Room Password</label
+          >
+          <input
+            id="room-password"
+            bind:value={newRoomPassword}
             placeholder="My Awesome Room"
             class="w-full px-5 py-4 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:outline-none text-lg transition-colors"
           />

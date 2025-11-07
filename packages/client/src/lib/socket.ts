@@ -80,6 +80,10 @@ export const initSocket = () => {
     leaveRoom();
   });
 
+  socket.on("password-incorrect", (data) => {
+    showError(`Incorrect password for room ${data.roomId}`);
+  });
+
   return socket;
 };
 
