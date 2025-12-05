@@ -26,6 +26,7 @@
     "vite": "^7.1.10"
   },
   "dependencies": {
-    "socket.io-client": "^4.8.1"
+    "socket.io-client": "^4.8.1",
+    "valibot": "^1.2.0"
   }
 }

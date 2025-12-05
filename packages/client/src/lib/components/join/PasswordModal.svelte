@@ -1,17 +1,18 @@
 <script lang="ts">
-  import { getSocket } from "$lib/socket";
+  import { getSocket } from "$lib/api/socket";
   import { joinPageState, password, selectedRoomId } from "$lib/stores/join";
 
   let { onCancel }: { onCancel?: () => void } = $props();
 
   const joinRoomWithPassword = () => {
-    if ($selectedRoomId && $password.trim()) {
-      getSocket()?.emit("join-room", {
-        roomId: $selectedRoomId,
-        password: $password,
-      });
-      joinPageState.set("browsing");
-    }
+    const socket = getSocket();
+    if (!socket || !$selectedRoomId || !$password.trim()) return;
+
+    socket.emit("join-room", {
+      roomId: $selectedRoomId,
+      password: $password,
+    });
+    joinPageState.set("browsing");
   };
 </script>
 

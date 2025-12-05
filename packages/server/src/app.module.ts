@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
-import { PixelBoardModule } from "src/pixel-board/pixel-board.module";
+import { GatewayModule } from "src/gateway/gateway.module";
 
 @Module({
-  imports: [PixelBoardModule],
+  imports: [GatewayModule],
 })
 export class AppModule {}

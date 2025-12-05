@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getSocket } from "$lib/socket";
+  import { getSocket } from "$lib/api/socket";
   import {
     currentRoom,
     cursors,
@@ -79,25 +79,45 @@
   };
 
   onMount(() => {
-    draw();
+    if (!canvas) return;
+
+    let animationFrameId: number | null = null;
+
+    const scheduleRedraw = () => {
+      if (animationFrameId === null) {
+        animationFrameId = requestAnimationFrame(() => {
+          draw();
+          animationFrameId = null;
+        });
+      }
+    };
+
+    scheduleRedraw();
+
     canvas.addEventListener("mousedown", handleMouseDown);
     canvas.addEventListener("mousemove", handleMouseMove);
     canvas.addEventListener("mouseup", handleMouseUp);
     canvas.addEventListener("mouseleave", handleMouseUp);
 
-    const unsub1 = pixels.subscribe(() => requestAnimationFrame(draw));
-    const unsub2 = cursors.subscribe(() => requestAnimationFrame(draw));
-    const unsub3 = currentRoom.subscribe(() => requestAnimationFrame(draw));
+    const unsub1 = pixels.subscribe(scheduleRedraw);
+    const unsub2 = cursors.subscribe(scheduleRedraw);
+    const unsub3 = currentRoom.subscribe(scheduleRedraw);
 
     return () => {
       unsub1();
       unsub2();
       unsub3();
 
-      canvas.removeEventListener("mousedown", handleMouseDown);
-      canvas.removeEventListener("mousemove", handleMouseMove);
-      canvas.removeEventListener("mouseup", handleMouseUp);
-      canvas.removeEventListener("mouseleave", handleMouseUp);
+      if (animationFrameId !== null) {
+        cancelAnimationFrame(animationFrameId);
+      }
+
+      if (canvas) {
+        canvas.removeEventListener("mousedown", handleMouseDown);
+        canvas.removeEventListener("mousemove", handleMouseMove);
+        canvas.removeEventListener("mouseup", handleMouseUp);
+        canvas.removeEventListener("mouseleave", handleMouseUp);
+      }
     };
   });
 </script>

@@ -8,7 +8,7 @@ import {
   rooms,
   showError,
   users,
-} from "./stores";
+} from "$lib/stores";
 import { leaveRoom } from "$lib/utils";
 
 let socket: Socket | null = null;
@@ -41,15 +41,26 @@ export const initSocket = () => {
     }));
   });
 
+  const cursorTimeouts = new Map<string, NodeJS.Timeout>();
+
   socket.on("cursor-update", (cursor) => {
+    const existingTimeout = cursorTimeouts.get(cursor.id);
+    if (existingTimeout) {
+      clearTimeout(existingTimeout);
+    }
+
     cursors.update((cs) => ({ ...cs, [cursor.id]: cursor }));
-    setTimeout(() => {
+
+    const timeout = setTimeout(() => {
       cursors.update((cs) => {
         const newCursors = { ...cs };
         delete newCursors[cursor.id];
         return newCursors;
       });
+      cursorTimeouts.delete(cursor.id);
     }, 100);
+
+    cursorTimeouts.set(cursor.id, timeout);
   });
 
   socket.on("users-update", (data) => {
@@ -88,3 +99,10 @@ export const initSocket = () => {
 };
 
 export const getSocket = () => socket;
+
+export const disconnectSocket = () => {
+  if (socket) {
+    socket.disconnect();
+    socket = null;
+  }
+};

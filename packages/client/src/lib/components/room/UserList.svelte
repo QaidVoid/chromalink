@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getSocket } from "$lib/socket";
+  import { getSocket } from "$lib/api/socket";
   import { isAdmin, users } from "$lib/stores";
   import { roomActions } from "$lib/utils/room";
 </script>

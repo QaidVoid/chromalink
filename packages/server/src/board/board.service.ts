@@ -1,14 +1,13 @@
 import assert from "node:assert";
 import { Injectable } from "@nestjs/common";
-import type { Pixel, User } from "src/pixel-board/pixel-board.interface";
+import { DEFAULT_USER_COLOR } from "src/board/board.constants";
+import type { Pixel, User } from "src/board/board.interface";
 
 @Injectable()
-export class PixelBoardService {
+export class BoardService {
   private boards: Map<string, Map<string, string>> = new Map();
   private users: Map<string, Map<string, User>> = new Map();
   private nicknames: Map<string, string> = new Map();
-  private readonly BOARD_WIDTH = 48;
-  private readonly BOARD_HEIGHT = 48;
 
   private ensureRoom(roomId: string) {
     if (!this.boards.has(roomId)) {
@@ -37,10 +36,6 @@ export class PixelBoardService {
   }
 
   setPixel(roomId: string, x: number, y: number, color: string): Pixel {
-    if (x < 0 || x >= this.BOARD_WIDTH || y < 0 || y >= this.BOARD_HEIGHT) {
-      throw new Error("Pixel out of bounds");
-    }
-
     this.ensureRoom(roomId);
 
     const key = `${x},${y}`;
@@ -81,7 +76,7 @@ export class PixelBoardService {
       nickname,
       x: 0,
       y: 0,
-      color: "#000000",
+      color: DEFAULT_USER_COLOR,
     });
   }
 

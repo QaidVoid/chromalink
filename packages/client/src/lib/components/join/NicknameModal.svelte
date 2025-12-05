@@ -1,17 +1,25 @@
 <script lang="ts">
-  import { getSocket } from "$lib/socket";
-  import { nickname } from "$lib/stores";
+  import { getSocket } from "$lib/api/socket";
+  import { nickname, showError } from "$lib/stores";
+  import { validateNickname } from "$lib/api/validation";
 
   let { onComplete }: { onComplete?: () => void } = $props();
 
   let newNickname = $state("");
 
   const setUserNickname = () => {
-    if (newNickname.trim()) {
-      getSocket()?.emit("set-nickname", { nickname: newNickname });
-      nickname.set(newNickname);
-      onComplete?.();
+    const socket = getSocket();
+    if (!socket) return;
+
+    const error = validateNickname(newNickname);
+    if (error) {
+      showError(error);
+      return;
     }
+
+    socket.emit("set-nickname", { nickname: newNickname });
+    nickname.set(newNickname);
+    onComplete?.();
   };
 </script>
 

@@ -4,7 +4,7 @@
   import NicknameModal from "$lib/components/join/NicknameModal.svelte";
   import PasswordModal from "$lib/components/join/PasswordModal.svelte";
   import RoomsList from "$lib/components/join/RoomsList.svelte";
-  import { getSocket, initSocket } from "$lib/socket";
+  import { getSocket, initSocket } from "$lib/api/socket";
   import { currentRoom, nickname } from "$lib/stores";
   import {
     joinPageState,
@@ -16,7 +16,9 @@
 
   onMount(() => {
     const socket = initSocket();
-    socket.emit("get-rooms");
+    if (socket) {
+      socket.emit("get-rooms");
+    }
 
     if ($nickname.trim().length === 0) {
       joinPageState.set("nickname");
@@ -28,12 +30,15 @@
   });
 
   const joinRoom = (roomId: string, hasPassword: boolean) => {
+    const socket = getSocket();
+    if (!socket) return;
+
     if (hasPassword) {
       selectedRoomId.set(roomId);
       password.set("");
       joinPageState.set("password");
     } else {
-      getSocket()?.emit("join-room", { roomId });
+      socket.emit("join-room", { roomId });
     }
   };
 

@@ -1,12 +1,12 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import Canvas from "$lib/components/Canvas.svelte";
+  import Canvas from "$lib/components/board/Canvas.svelte";
   import ColorPalette from "$lib/components/room/ColorPalette.svelte";
   import Header from "$lib/components/room/Header.svelte";
   import KickModal from "$lib/components/room/KickModal.svelte";
   import TipsPanel from "$lib/components/room/TipsPanel.svelte";
   import UserList from "$lib/components/room/UserList.svelte";
-  import { getSocket } from "$lib/socket";
+  import { getSocket } from "$lib/api/socket";
   import { currentRoom } from "$lib/stores";
   import { resetState } from "$lib/utils";
   import { downloadCanvasImage } from "$lib/utils/room";

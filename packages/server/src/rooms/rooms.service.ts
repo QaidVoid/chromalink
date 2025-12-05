@@ -1,14 +1,15 @@
 import { Injectable } from "@nestjs/common";
-import type { Room } from "src/pixel-board/room.interface";
+import { DEFAULT_ROOMS, SYSTEM_ADMIN_ID } from "src/rooms/rooms.constants";
+import type { Room, RoomListItem } from "src/rooms/rooms.interface";
 
 @Injectable()
-export class RoomService {
+export class RoomsService {
   private rooms: Map<string, Room> = new Map();
 
   constructor() {
-    this.createRoom("lobby", "Main Lobby", "system");
-    this.createRoom("chill", "Chill Zone", "system");
-    this.createRoom("art", "Art Studio", "system");
+    for (const { id, name } of DEFAULT_ROOMS) {
+      this.createRoom(id, name, SYSTEM_ADMIN_ID);
+    }
   }
 
   createRoom(
@@ -35,7 +36,7 @@ export class RoomService {
     return this.rooms.get(id);
   }
 
-  getAllRooms(): Omit<Room, "adminId" | "allowedUsers">[] {
+  getAllRooms(): RoomListItem[] {
     return Array.from(this.rooms.values()).map((room) => ({
       id: room.id,
       name: room.name,
@@ -106,13 +107,14 @@ export class RoomService {
     const room = this.rooms.get(roomId);
     if (room) {
       room.allowedUsers.delete(userId);
+      return true;
     }
     return false;
   }
 
   deleteRoom(roomId: string): boolean {
     const room = this.rooms.get(roomId);
-    if (room?.adminId !== "system") {
+    if (room?.adminId !== SYSTEM_ADMIN_ID) {
       return this.rooms.delete(roomId);
     }
     return false;
@@ -120,7 +122,8 @@ export class RoomService {
 
   verifyPassword(roomId: string, password: string): boolean {
     const room = this.rooms.get(roomId);
-    if (!room || !room.password) return true;
+    if (!room) return false;
+    if (!room.password) return true;
     return room.password === password;
   }
 }

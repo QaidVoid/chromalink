@@ -1,11 +1,43 @@
-import { getSocket } from "$lib/socket";
+import { getSocket } from "$lib/api/socket";
+import { showError } from "$lib/stores";
 import { kickModalState } from "$lib/stores/room";
 
 export const roomActions = {
-  lockRoom: () => getSocket()?.emit("lock-room"),
-  unlockRoom: () => getSocket()?.emit("unlock-room"),
-  deleteRoom: () => getSocket()?.emit("delete-room"),
-  clearBoard: () => getSocket()?.emit("clear-board"),
+  lockRoom: () => {
+    const socket = getSocket();
+    if (!socket) {
+      showError("Not connected to server");
+      return;
+    }
+    socket.emit("lock-room");
+  },
+
+  unlockRoom: () => {
+    const socket = getSocket();
+    if (!socket) {
+      showError("Not connected to server");
+      return;
+    }
+    socket.emit("unlock-room");
+  },
+
+  deleteRoom: () => {
+    const socket = getSocket();
+    if (!socket) {
+      showError("Not connected to server");
+      return;
+    }
+    socket.emit("delete-room");
+  },
+
+  clearBoard: () => {
+    const socket = getSocket();
+    if (!socket) {
+      showError("Not connected to server");
+      return;
+    }
+    socket.emit("clear-board");
+  },
 
   showKickConfirmation: (user: { id: string; nickname: string }) => {
     kickModalState.set({ show: true, user });
@@ -18,10 +50,12 @@ export const roomActions = {
   confirmKick: () => {
     kickModalState.update((state) => {
       if (state.user) {
-        getSocket()?.emit("kick-user", {
-          userId: state.user.id,
-          nickName: state.user.nickname,
-        });
+        const socket = getSocket();
+        if (!socket) {
+          showError("Not connected to server");
+          return { show: false, user: null };
+        }
+        socket.emit("kick-user", { userId: state.user.id });
       }
       return { show: false, user: null };
     });
@@ -30,7 +64,10 @@ export const roomActions = {
 
 export const downloadCanvasImage = (roomName?: string) => {
   const canvas = document.querySelector("canvas");
-  if (!canvas) return;
+  if (!canvas) {
+    showError("Canvas not found");
+    return;
+  }
 
   const dataUrl = canvas.toDataURL();
   const link = document.createElement("a");

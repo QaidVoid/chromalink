@@ -1,18 +1,27 @@
 <script lang="ts">
-  import { getSocket } from "$lib/socket";
+  import { getSocket } from "$lib/api/socket";
+  import { showError } from "$lib/stores";
   import { joinPageState, newRoomData } from "$lib/stores/join";
+  import { validateCreateRoom } from "$lib/api/validation";
 
   let { onCancel }: { onCancel?: () => void } = $props();
 
   const createRoom = () => {
-    if ($newRoomData.id && $newRoomData.name) {
-      getSocket()?.emit("create-room", {
-        roomId: $newRoomData.id,
-        roomName: $newRoomData.name,
-        ...($newRoomData.password && { password: $newRoomData.password }),
-      });
-      joinPageState.set("browsing");
+    const socket = getSocket();
+    if (!socket) return;
+
+    const validation = validateCreateRoom($newRoomData);
+    if (!validation.success) {
+      showError(validation.error);
+      return;
     }
+
+    socket.emit("create-room", {
+      roomId: validation.data.id,
+      roomName: validation.data.name,
+      ...($newRoomData.password && { password: $newRoomData.password }),
+    });
+    joinPageState.set("browsing");
   };
 </script>
 
