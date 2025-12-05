@@ -2,3 +2,49 @@
 @plugin "@iconify/tailwind4" {
   scale: 1.5;
 };
+
+:root {
+  --bg-primary: #D5D6DB;
+  --bg-secondary: #CBCCD1;
+  --bg-tertiary: #DFE0E8;
+  --bg-hover: #E9E9ED;
+
+  --text-primary: #343B58;
+  --text-secondary: #565F89;
+  --text-tertiary: #9AA5CE;
+
+  --border-primary: #CBCCD1;
+  --border-secondary: #E9E9ED;
+
+  --accent-primary: #2E7DE9;
+  --accent-secondary: #9854F1;
+  --accent-success: #587539;
+  --accent-error: #F52A65;
+  --accent-warning: #8F5E15;
+}
+
+[data-theme="dark"] {
+  --bg-primary: #1A1B26;
+  --bg-secondary: #24283B;
+  --bg-tertiary: #414868;
+  --bg-hover: #343B58;
+
+  --text-primary: #C0CAF5;
+  --text-secondary: #9AA5CE;
+  --text-tertiary: #565F89;
+
+  --border-primary: #414868;
+  --border-secondary: #24283B;
+
+  --accent-primary: #7AA2F7;
+  --accent-secondary: #BB9AF7;
+  --accent-success: #9ECE6A;
+  --accent-error: #F7768E;
+  --accent-warning: #E0AF68;
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}

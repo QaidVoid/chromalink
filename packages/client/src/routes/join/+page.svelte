@@ -4,6 +4,7 @@
   import NicknameModal from "$lib/components/join/NicknameModal.svelte";
   import PasswordModal from "$lib/components/join/PasswordModal.svelte";
   import RoomsList from "$lib/components/join/RoomsList.svelte";
+  import ThemeToggle from "$lib/components/ThemeToggle.svelte";
   import { getSocket, initSocket } from "$lib/api/socket";
   import { currentRoom, nickname } from "$lib/stores";
   import {
@@ -57,30 +58,41 @@
 {/if}
 
 <div
-  class="min-h-screen bg-linear-to-br from-slate-50 via-purple-50 to-blue-50 flex items-center justify-center p-8 relative overflow-hidden"
+  class="min-h-screen flex items-center justify-center p-8 relative overflow-hidden"
+  style="background: var(--bg-primary);"
 >
-  <div class="absolute inset-0 overflow-hidden pointer-events-none opacity-20">
+  <!-- Theme toggle in top right -->
+  <div class="absolute top-4 right-4 z-20">
+    <ThemeToggle />
+  </div>
+
+  <!-- Background decorative elements -->
+  <div class="absolute inset-0 overflow-hidden pointer-events-none opacity-10">
     <div
-      class="absolute top-20 left-10 w-96 h-96 bg-purple-300 rounded-full blur-3xl"
+      class="absolute top-20 left-10 w-96 h-96 rounded-full blur-3xl"
+      style="background: var(--accent-primary);"
     ></div>
     <div
-      class="absolute bottom-20 right-10 w-96 h-96 bg-blue-300 rounded-full blur-3xl"
+      class="absolute bottom-20 right-10 w-96 h-96 rounded-full blur-3xl"
+      style="background: var(--accent-secondary);"
     ></div>
   </div>
 
   <div
-    class="bg-white rounded-3xl shadow-2xl p-10 max-w-3xl w-full relative z-10 border border-purple-100"
+    class="rounded-3xl shadow-2xl p-10 max-w-3xl w-full relative z-10 border"
+    style="background: var(--bg-secondary); border-color: var(--border-primary);"
   >
     <div class="text-center mb-10">
       <h1
-        class="text-5xl font-bold bg-linear-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-3 flex items-center justify-center"
+        class="text-5xl font-bold mb-3 flex items-center justify-center gap-3"
+        style="color: var(--accent-primary);"
       >
-        <span
-          class="icon-[mdi--color] mask-(--svg) bg-linear-to-r from-purple-600 to-blue-600"
-        ></span>
-        <span>Pixel Art Rooms</span>
+        <span class="icon-[mdi--palette]"></span>
+        <span>Chromalink</span>
       </h1>
-      <p class="text-gray-600 text-lg">Choose a room or create your own</p>
+      <p class="text-lg" style="color: var(--text-secondary);">
+        Collaborative pixel art in real-time
+      </p>
     </div>
 
     {#if $joinPageState === "browsing"}

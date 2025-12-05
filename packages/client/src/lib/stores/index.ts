@@ -23,3 +23,4 @@ export * from "./board";
 export * from "./ui";
 export * from "./room";
 export * from "./join";
+export * from "./theme";

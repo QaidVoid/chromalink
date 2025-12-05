@@ -7,6 +7,32 @@
 
   <title>ChromaLink - Real-time collaborative Pixel Art</title>
   <meta name="description" content="Draw pixel art together in real time. No signup. Free forever.">
+
+  <script>
+    // Prevent FOUC by setting theme before page renders
+    (function() {
+      const THEME_KEY = 'chromalink-theme';
+      let theme = 'system';
+      let actualTheme = 'dark';
+
+      try {
+        const stored = localStorage.getItem(THEME_KEY);
+        if (stored === 'dark' || stored === 'light' || stored === 'system') {
+          theme = stored;
+        }
+
+        // Resolve actual theme if system
+        if (theme === 'system') {
+          actualTheme = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+        } else {
+          actualTheme = theme;
+        }
+      } catch (e) {}
+
+      document.documentElement.setAttribute('data-theme', actualTheme);
+    })();
+  </script>
+
   %sveltekit.head%
 </head>
 

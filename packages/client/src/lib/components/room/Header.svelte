@@ -1,4 +1,5 @@
 <script lang="ts">
+  import ThemeToggle from "$lib/components/ThemeToggle.svelte";
   import { currentRoom, isAdmin, isRoomLocked, users } from "$lib/stores";
   import { leaveRoom } from "$lib/utils";
   import { roomActions } from "$lib/utils/room";
@@ -6,24 +7,33 @@
   let { onDownload } = $props();
 </script>
 
-<div class="shrink-0 bg-white border-b-2 border-purple-100 shadow-md px-6 py-4">
+<div
+  class="shrink-0 border-b-2 shadow-md px-6 py-4"
+  style="background: var(--bg-secondary); border-color: var(--border-primary);"
+>
   <div class="flex items-center justify-between">
     <div class="flex items-center gap-4">
       <h1
-        class="text-3xl font-bold bg-linear-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent flex items-center gap-2"
+        class="text-3xl font-bold flex items-center gap-2"
+        style="color: var(--accent-primary);"
       >
         {$currentRoom?.name || "Pixel Art Board"}
         {#if $isRoomLocked}
-          <span class="icon-[mdi--lock-outline] text-orange-500 text-xl"></span>
+          <span
+            class="icon-[mdi--lock-outline] text-xl"
+            style="color: var(--accent-warning);"
+          ></span>
         {/if}
       </h1>
     </div>
 
     <div class="flex items-center gap-3">
+      <ThemeToggle />
       {#if $isAdmin}
         <button
           onclick={roomActions.clearBoard}
-          class="flex items-center gap-2 px-4 py-2 bg-red-400 hover:bg-red-500 text-white rounded-lg transition-colors shadow-sm text-sm font-medium"
+          class="flex items-center gap-2 px-4 py-2 text-white rounded-lg transition-all shadow-sm text-sm font-medium"
+          style="background: var(--accent-error);"
           title="Clear Board"
         >
           <span class="icon-[mdi--trash-outline]"></span>
@@ -33,7 +43,8 @@
         {#if $isRoomLocked}
           <button
             onclick={roomActions.unlockRoom}
-            class="flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors shadow-sm text-sm font-medium"
+            class="flex items-center gap-2 px-4 py-2 text-white rounded-lg transition-all shadow-sm text-sm font-medium"
+            style="background: var(--accent-success);"
             title="Unlock Room"
           >
             <span class="icon-[mdi--lock-open-outline]"></span>
@@ -42,7 +53,8 @@
         {:else}
           <button
             onclick={roomActions.lockRoom}
-            class="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-colors shadow-sm text-sm font-medium"
+            class="flex items-center gap-2 px-4 py-2 text-white rounded-lg transition-all shadow-sm text-sm font-medium"
+            style="background: var(--accent-warning);"
             title="Lock Room"
           >
             <span class="icon-[mdi--lock-outline]"></span>
@@ -52,25 +64,28 @@
 
         <button
           onclick={roomActions.deleteRoom}
-          class="flex items-center gap-2 px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors text-sm font-medium"
+          class="flex items-center gap-2 px-3 py-2 text-white rounded-lg transition-all text-sm font-medium"
+          style="background: var(--accent-error);"
         >
           <span class="icon-[mdi--delete-outline]"></span>
           Delete Room
         </button>
 
-        <div class="h-8 w-px bg-gray-300"></div>
+        <div class="h-8 w-px" style="background: var(--border-primary);"></div>
       {/if}
 
       <div
-        class="flex items-center gap-2 bg-blue-50 px-4 py-2 rounded-lg border border-blue-200"
+        class="flex items-center gap-2 px-4 py-2 rounded-lg border"
+        style="background: var(--bg-tertiary); border-color: var(--border-primary); color: var(--accent-primary);"
       >
-        <span class="icon-[mdi--account-multiple-outline] text-blue-600"></span>
-        <span class="font-bold text-blue-600">{$users.length}</span>
+        <span class="icon-[mdi--account-multiple-outline]"></span>
+        <span class="font-bold">{$users.length}</span>
       </div>
 
       <button
         onclick={onDownload}
-        class="flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors shadow-sm font-medium"
+        class="flex items-center gap-2 px-4 py-2 text-white rounded-lg transition-all shadow-sm font-medium"
+        style="background: var(--accent-success);"
       >
         <span class="icon-[mdi--tray-download]"></span>
         Download
@@ -78,7 +93,8 @@
 
       <button
         onclick={leaveRoom}
-        class="flex items-center gap-2 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors shadow-sm font-medium"
+        class="flex items-center gap-2 px-4 py-2 rounded-lg transition-all shadow-sm font-medium"
+        style="background: var(--bg-tertiary); color: var(--text-primary);"
       >
         <span class="icon-[mdi--logout]"></span>
         Leave

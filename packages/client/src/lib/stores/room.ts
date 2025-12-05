@@ -1,4 +1,5 @@
 import { writable } from "svelte/store";
+import { DRAWING_COLORS } from "$lib/theme/colors";
 
 type KickModalState = {
   show: boolean;
@@ -13,21 +14,4 @@ export const kickModalState = writable<KickModalState>({
   user: null,
 });
 
-export const colors = writable([
-  "#FF6B6B",
-  "#4ECDC4",
-  "#45B7D1",
-  "#FFA07A",
-  "#98D8C8",
-  "#F7DC6F",
-  "#BB8FCE",
-  "#85C1E9",
-  "#52489C",
-  "#F08A5D",
-  "#B83B5E",
-  "#6A2C70",
-  "#000000",
-  "#FFFFFF",
-  "#808080",
-  "#FFB6C1",
-]);
+export const colors = writable(DRAWING_COLORS);

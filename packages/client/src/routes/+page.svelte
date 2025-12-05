@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { goto } from "$app/navigation";
+  import ThemeToggle from "$lib/components/ThemeToggle.svelte";
 
   const features = [
     {
@@ -42,19 +43,25 @@
 </script>
 
 <div
-  class="min-h-screen bg-linear-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col relative overflow-hidden"
+  class="min-h-screen flex flex-col relative overflow-hidden"
+  style="background: var(--bg-primary);"
 >
-  <div class="absolute inset-0 overflow-hidden pointer-events-none">
+  <div class="absolute top-4 right-4 z-50">
+    <ThemeToggle />
+  </div>
+
+  <div class="absolute inset-0 overflow-hidden pointer-events-none opacity-10">
     <div
-      class="absolute top-20 left-10 w-72 h-72 bg-purple-500/10 rounded-full blur-3xl animate-pulse"
+      class="absolute top-20 left-10 w-72 h-72 rounded-full blur-3xl animate-pulse"
+      style="background: var(--accent-primary);"
     ></div>
     <div
-      class="absolute bottom-20 right-10 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse"
-      style="animation-delay: 1s;"
+      class="absolute bottom-20 right-10 w-96 h-96 rounded-full blur-3xl animate-pulse"
+      style="animation-delay: 1s; background: var(--accent-secondary);"
     ></div>
     <div
-      class="absolute top-1/2 left-1/2 w-64 h-64 bg-pink-500/10 rounded-full blur-3xl animate-pulse"
-      style="animation-delay: 2s;"
+      class="absolute top-1/2 left-1/2 w-64 h-64 rounded-full blur-3xl animate-pulse"
+      style="animation-delay: 2s; background: var(--accent-error);"
     ></div>
   </div>
 
@@ -66,47 +73,43 @@
         class="text-6xl md:text-8xl font-extrabold mb-6 drop-shadow-2xl"
         style="opacity: {mounted ? 1 : 0}; transform: translateY({mounted
           ? 0
-          : 20}px); transition: all 0.6s ease-out;"
+          : 20}px); transition: all 0.6s ease-out; color: var(--accent-primary);"
       >
-        <span
-          class="text-transparent bg-clip-text bg-linear-to-r from-purple-400 via-pink-400 to-blue-400"
-        >
-          ChromaLink
-        </span>
+        Chromalink
       </h1>
       <p
-        class="text-xl md:text-3xl mb-4 text-gray-300 font-light"
+        class="text-xl md:text-3xl mb-4 font-light"
         style="opacity: {mounted ? 1 : 0}; transform: translateY({mounted
           ? 0
-          : 20}px); transition: all 0.6s ease-out 0.1s;"
+          : 20}px); transition: all 0.6s ease-out 0.1s; color: var(--text-primary);"
       >
         Collaborative pixel art, reimagined.
       </p>
       <p
-        class="text-lg md:text-xl mb-10 text-gray-400"
+        class="text-lg md:text-xl mb-10"
         style="opacity: {mounted ? 1 : 0}; transform: translateY({mounted
           ? 0
-          : 20}px); transition: all 0.6s ease-out 0.15s;"
+          : 20}px); transition: all 0.6s ease-out 0.15s; color: var(--text-secondary);"
       >
         Create stunning pixel art together in real-time
       </p>
       <button
         onclick={startDrawing}
-        class="px-10 py-4 bg-linear-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold text-lg rounded-full shadow-2xl shadow-purple-500/50 hover:shadow-purple-500/70 transform hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2"
+        class="px-10 py-4 text-white font-bold text-lg rounded-full shadow-2xl transform hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2"
         style="opacity: {mounted ? 1 : 0}; transform: translateY({mounted
           ? 0
           : 20}px) scale({mounted
           ? 1
-          : 0.95}); transition: all 0.6s ease-out 0.2s;"
+          : 0.95}); transition: all 0.6s ease-out 0.2s; background: var(--accent-primary);"
       >
-        <span class="icon-[mdi--sparkles] text-yellow-500"></span>
+        <span class="icon-[mdi--palette]"></span>
         <span>Start Drawing Now</span>
       </button>
       <p
-        class="text-sm mt-6 text-gray-400"
+        class="text-sm mt-6"
         style="opacity: {mounted ? 1 : 0}; transform: translateY({mounted
           ? 0
-          : 20}px); transition: all 0.6s ease-out 0.3s;"
+          : 20}px); transition: all 0.6s ease-out 0.3s; color: var(--text-tertiary);"
       >
         No signup • Instant access • 100% free
       </p>
@@ -114,29 +117,30 @@
   </div>
 
   <div
-    class="bg-black/20 backdrop-blur-xl py-20 w-full relative z-10 border-t border-white/5"
+    class="backdrop-blur-xl py-20 w-full relative z-10 border-t"
+    style="background: var(--bg-secondary); border-color: var(--border-primary);"
   >
     <div class="max-w-7xl mx-auto px-6">
-      <h2 class="text-4xl font-bold text-center text-white mb-16">
-        Why Artists Love ChromaLink
+      <h2 class="text-4xl font-bold text-center mb-16" style="color: var(--text-primary);">
+        Why Artists Love Chromalink
       </h2>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
         {#each features as feature, i}
           <div
-            class="bg-white/5 backdrop-blur-lg rounded-2xl p-8 text-center shadow-xl hover:bg-white/10 hover:shadow-2xl hover:shadow-purple-500/20 transition-all duration-300 border border-white/10 group"
+            class="backdrop-blur-lg rounded-2xl p-8 text-center shadow-xl hover:shadow-2xl transition-all duration-300 border group"
             style="animation-delay: {0.2 + i * 0.1}s; opacity: {mounted
               ? 1
               : 0}; transform: translateY({mounted
               ? 0
-              : 30}px); transition: all 0.6s ease-out;"
+              : 30}px); transition: all 0.6s ease-out; background: var(--bg-tertiary); border-color: var(--border-primary);"
           >
             <div
               class="text-6xl mb-6 group-hover:scale-110 transition-transform duration-300"
             >
               {feature.icon}
             </div>
-            <h3 class="text-2xl font-bold text-white mb-3">{feature.title}</h3>
-            <p class="text-gray-300 leading-relaxed">{feature.desc}</p>
+            <h3 class="text-2xl font-bold mb-3" style="color: var(--text-primary);">{feature.title}</h3>
+            <p class="leading-relaxed" style="color: var(--text-secondary);">{feature.desc}</p>
           </div>
         {/each}
       </div>
@@ -144,12 +148,14 @@
   </div>
 
   <footer
-    class="py-8 text-center text-gray-400 text-sm relative z-10 border-t border-white/5"
+    class="py-8 text-center text-sm relative z-10 border-t"
+    style="color: var(--text-tertiary); border-color: var(--border-primary);"
   >
     <a
       href="https://github.com/QaidVoid/chromalink"
       target="_blank"
-      class="text-purple-400 hover:text-purple-300 transition-colors"
+      class="transition-colors"
+      style="color: var(--accent-primary);"
       >Open Source</a
     >
   </footer>

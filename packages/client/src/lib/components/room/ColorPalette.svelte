@@ -7,8 +7,8 @@
 
 <div>
   <div class="flex items-center gap-2 mb-4">
-    <span class="icon-[mdi--palette] text-purple-600 text-xl"></span>
-    <h2 class="text-xl font-bold text-gray-800">Colors</h2>
+    <span class="icon-[mdi--palette] text-xl" style="color: var(--accent-primary);"></span>
+    <h2 class="text-xl font-bold" style="color: var(--text-primary);">Colors</h2>
   </div>
   <div class="grid grid-cols-4 gap-2 mb-4">
     {#each colors as color}
@@ -16,22 +16,22 @@
         onclick={() => selectedColor.set(color)}
         class={`w-full aspect-square rounded-lg transition-all hover:scale-105 ${
           $selectedColor === color
-            ? "ring-4 ring-purple-500 scale-105 shadow-lg"
-            : "ring-2 ring-gray-200 hover:ring-purple-300"
+            ? "ring-4 scale-105 shadow-lg"
+            : "ring-2 hover:ring-opacity-60"
         }`}
-        style={`background-color: ${color}`}
+        style={`background-color: ${color}; ${$selectedColor === color ? 'border-color: var(--accent-primary);' : 'border-color: var(--border-primary);'}`}
         aria-label={color}
       ></button>
     {/each}
   </div>
-  <div class="p-3 bg-purple-50 rounded-lg border border-purple-200">
-    <p class="text-xs text-gray-600 mb-2 font-medium">Selected</p>
+  <div class="p-3 rounded-lg border" style="background: var(--bg-tertiary); border-color: var(--border-primary);">
+    <p class="text-xs mb-2 font-medium" style="color: var(--text-secondary);">Selected</p>
     <div class="flex items-center gap-3">
       <div
-        class="w-12 h-12 rounded-lg ring-2 ring-gray-300 shadow-sm shrink-0"
-        style={`background-color: ${$selectedColor}`}
+        class="w-12 h-12 rounded-lg ring-2 shadow-sm shrink-0"
+        style={`background-color: ${$selectedColor}; border-color: var(--border-primary);`}
       ></div>
-      <span class="font-mono text-sm font-bold text-gray-700"
+      <span class="font-mono text-sm font-bold" style="color: var(--text-primary);"
         >{$selectedColor}</span
       >
     </div>

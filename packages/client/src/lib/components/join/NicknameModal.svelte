@@ -24,17 +24,24 @@
 </script>
 
 <div
-  class="min-h-screen bg-linear-to-br from-purple-100 to-blue-100 flex items-center justify-center p-8"
+  class="fixed inset-0 flex items-center justify-center p-8 z-50"
+  style="background: var(--bg-primary);"
 >
-  <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
+  <div
+    class="rounded-2xl shadow-2xl p-8 max-w-md w-full"
+    style="background: var(--bg-secondary);"
+  >
     <div class="text-center mb-6">
       <div
-        class="w-12 h-12 bg-linear-to-r from-purple-600 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4"
+        class="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4"
+        style="background: var(--accent-primary);"
       >
         <span class="icon-[mdi--account-outline] text-white text-2xl"></span>
       </div>
-      <h1 class="text-3xl font-bold text-gray-800 mb-2">Welcome!</h1>
-      <p class="text-gray-600">Choose your nickname</p>
+      <h1 class="text-3xl font-bold mb-2" style="color: var(--text-primary);">
+        Welcome!
+      </h1>
+      <p style="color: var(--text-secondary);">Choose your nickname</p>
     </div>
 
     <div class="space-y-4">
@@ -44,12 +51,14 @@
         onkeypress={(e) => e.key === "Enter" && setUserNickname()}
         placeholder="Enter your nickname..."
         maxlength={20}
-        class="w-full px-4 py-3 border-2 border-purple-300 rounded-lg focus:border-purple-500 focus:outline-none text-lg"
+        class="w-full px-4 py-3 border-2 rounded-lg focus:outline-none text-lg transition-colors"
+        style="background: var(--bg-tertiary); color: var(--text-primary); border-color: var(--border-primary);"
       />
       <button
         onclick={setUserNickname}
         disabled={!newNickname.trim()}
-        class="w-full py-3 bg-linear-to-r from-purple-500 to-blue-500 text-white rounded-lg hover:from-purple-600 hover:to-blue-600 transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+        class="w-full py-3 text-white rounded-lg transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+        style="background: var(--accent-primary);"
       >
         Continue
       </button>

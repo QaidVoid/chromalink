@@ -30,7 +30,8 @@
 </script>
 
 <div
-  class="h-screen flex flex-col bg-linear-to-br from-slate-50 via-purple-50 to-blue-50 overflow-hidden"
+  class="h-screen flex flex-col overflow-hidden"
+  style="background: var(--bg-primary);"
 >
   <KickModal />
 
@@ -40,7 +41,8 @@
     <div class="flex-1 flex items-center justify-center p-4">
       <div class="h-full w-full flex items-center justify-center">
         <div
-          class="bg-white rounded-xl shadow-xl p-3 border-2 border-purple-200 max-h-full flex items-center justify-center"
+          class="rounded-xl shadow-xl p-3 border-2 max-h-full flex items-center justify-center"
+          style="background: var(--bg-secondary); border-color: var(--border-primary);"
         >
           <Canvas />
         </div>
@@ -48,7 +50,8 @@
     </div>
 
     <div
-      class="w-80 shrink-0 bg-white border-l-2 border-purple-100 shadow-lg overflow-y-auto"
+      class="w-80 shrink-0 border-l-2 shadow-lg overflow-y-auto"
+      style="background: var(--bg-secondary); border-color: var(--border-primary);"
     >
       <div class="p-6 space-y-6">
         <ColorPalette />
