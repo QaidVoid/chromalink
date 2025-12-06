@@ -87,6 +87,15 @@ export class DatabaseService implements OnModuleInit {
       .execute();
   }
 
+  async deletePixel(roomId: string, x: number, y: number) {
+    return await db
+      .deleteFrom("board")
+      .where("room_id", "=", roomId)
+      .where("x", "=", x)
+      .where("y", "=", y)
+      .execute();
+  }
+
   async getBoard(roomId: string) {
     return await db
       .selectFrom("board")

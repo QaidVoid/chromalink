@@ -15,6 +15,7 @@ import {
   CreateRoomSchema,
   CursorMoveSchema,
   DrawPixelSchema,
+  ErasePixelSchema,
   JoinRoomSchema,
   KickUserSchema,
   NicknameSchema,
@@ -353,6 +354,31 @@ export class PixelBoardGateway
         result.output.color,
       );
       this.server.to(roomId).emit("pixel-update", pixel);
+    } catch (error) {
+      client.emit("error", error.message);
+    }
+  }
+
+  @SubscribeMessage("erase-pixel")
+  async handleErasePixel(
+    @MessageBody() data: unknown,
+    @ConnectedSocket() client: Socket,
+  ) {
+    const result = safeParse(ErasePixelSchema, data);
+    if (!result.success) {
+      client.emit("error", result.issues[0]?.message || "Invalid data");
+      return;
+    }
+
+    const roomId = this.userRooms.get(client.id);
+    if (!roomId) {
+      client.emit("error", "Not in a room");
+      return;
+    }
+
+    try {
+      await this.boardService.erasePixel(roomId, result.output.x, result.output.y);
+      this.server.to(roomId).emit("pixel-erased", { x: result.output.x, y: result.output.y });
     } catch (error) {
       client.emit("error", error.message);
     }

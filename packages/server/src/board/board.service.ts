@@ -77,6 +77,19 @@ export class BoardService implements OnModuleInit {
     return { x, y, color };
   }
 
+  async erasePixel(roomId: string, x: number, y: number): Promise<void> {
+    this.ensureRoom(roomId);
+
+    const key = `${x},${y}`;
+
+    const board = this.boards.get(roomId);
+    assert(board, "Board not found");
+
+    board.delete(key);
+
+    await this.databaseService.deletePixel(roomId, x, y);
+  }
+
   updateUserCursor(
     roomId: string,
     socketId: string,

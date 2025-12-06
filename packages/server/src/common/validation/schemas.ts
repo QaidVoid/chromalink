@@ -68,6 +68,21 @@ export const DrawPixelSchema = object({
   ),
 });
 
+export const ErasePixelSchema = object({
+  x: pipe(
+    number(),
+    integer(),
+    minValue(0, "X coordinate must be >= 0"),
+    maxValue(47, "X coordinate must be < 48"),
+  ),
+  y: pipe(
+    number(),
+    integer(),
+    minValue(0, "Y coordinate must be >= 0"),
+    maxValue(47, "Y coordinate must be < 48"),
+  ),
+});
+
 export const CursorMoveSchema = object({
   x: pipe(number(), integer()),
   y: pipe(number(), integer()),
@@ -94,6 +109,7 @@ export type NicknameInput = InferOutput<typeof NicknameSchema>;
 export type CreateRoomInput = InferOutput<typeof CreateRoomSchema>;
 export type JoinRoomInput = InferOutput<typeof JoinRoomSchema>;
 export type DrawPixelInput = InferOutput<typeof DrawPixelSchema>;
+export type ErasePixelInput = InferOutput<typeof ErasePixelSchema>;
 export type CursorMoveInput = InferOutput<typeof CursorMoveSchema>;
 export type KickUserInput = InferOutput<typeof KickUserSchema>;
 export type ChatMessageInput = InferOutput<typeof ChatMessageSchema>;

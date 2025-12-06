@@ -154,7 +154,14 @@
 
   const drawPixel = (x: number, y: number) => {
     if (x >= 0 && x < BOARD_SIZE && y >= 0 && y < BOARD_SIZE) {
-      getSocket()?.emit("draw-pixel", { x, y, color: $selectedColor });
+      const socket = getSocket();
+      if (!socket) return;
+
+      if ($selectedColor === "#ERASER") {
+        socket.emit("erase-pixel", { x, y });
+      } else {
+        socket.emit("draw-pixel", { x, y, color: $selectedColor });
+      }
     }
   };
 

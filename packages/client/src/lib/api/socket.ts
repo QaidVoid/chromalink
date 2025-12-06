@@ -48,6 +48,14 @@ export const initSocket = () => {
     }));
   });
 
+  socket.on("pixel-erased", (data) => {
+    pixels.update((p) => {
+      const newPixels = { ...p };
+      delete newPixels[`${data.x},${data.y}`];
+      return newPixels;
+    });
+  });
+
   const cursorTimeouts = new Map<string, NodeJS.Timeout>();
 
   socket.on("cursor-update", (cursor) => {
