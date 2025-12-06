@@ -7,6 +7,7 @@
     pixels,
     selectedColor,
     brushSize,
+    symmetryMode,
     users,
   } from "$lib/stores";
   import { assert, BOARD_SIZE, getPixelCoords, PIXEL_SIZE } from "$lib/utils";
@@ -14,6 +15,55 @@
 
   let canvas: HTMLCanvasElement;
   let mousePos = $state<{ x: number; y: number } | null>(null);
+
+  const getSymmetricPositions = (x: number, y: number): { x: number; y: number }[] => {
+    const center = BOARD_SIZE / 2;
+    const positions: { x: number; y: number }[] = [{ x, y }];
+
+    if ($symmetryMode === "none") return positions;
+
+    if ($symmetryMode === "horizontal" || $symmetryMode === "both") {
+      const mirrorX = Math.floor(BOARD_SIZE - 1 - x);
+      positions.push({ x: mirrorX, y });
+    }
+
+    if ($symmetryMode === "vertical" || $symmetryMode === "both") {
+      const mirrorY = Math.floor(BOARD_SIZE - 1 - y);
+      positions.push({ x, y: mirrorY });
+    }
+
+    if ($symmetryMode === "both") {
+      const mirrorX = Math.floor(BOARD_SIZE - 1 - x);
+      const mirrorY = Math.floor(BOARD_SIZE - 1 - y);
+      positions.push({ x: mirrorX, y: mirrorY });
+    }
+
+    if ($symmetryMode === "radial4") {
+      const dx = x - center;
+      const dy = y - center;
+      positions.push(
+        { x: Math.floor(center - dx), y: Math.floor(center + dy) },
+        { x: Math.floor(center + dy), y: Math.floor(center - dx) },
+        { x: Math.floor(center - dy), y: Math.floor(center + dx) },
+      );
+    }
+
+    if ($symmetryMode === "radial8") {
+      const dx = x - center;
+      const dy = y - center;
+      positions.push(
+        { x: Math.floor(center - dx), y: Math.floor(center + dy) },
+        { x: Math.floor(center + dx), y: Math.floor(center - dy) },
+        { x: Math.floor(center - dx), y: Math.floor(center - dy) },
+        { x: Math.floor(center + dy), y: Math.floor(center + dx) },
+        { x: Math.floor(center - dy), y: Math.floor(center + dx) },
+        { x: Math.floor(center + dy), y: Math.floor(center - dx) },
+        { x: Math.floor(center - dy), y: Math.floor(center - dx) },
+      );
+    }
+
+    return positions;
+  };
 
   const draw = () => {
     const ctx = canvas.getContext("2d");
@@ -140,48 +190,54 @@
       }
     }
 
-    // Draw local cursor preview
+    // Draw local cursor preview with symmetry
     if (mousePos) {
-      const x = mousePos.x * PIXEL_SIZE;
-      const y = mousePos.y * PIXEL_SIZE;
       const cursorSize = $brushSize;
       const width = cursorSize * PIXEL_SIZE;
       const height = cursorSize * PIXEL_SIZE;
       const cursorColor = $selectedColor === "#ERASER" ? "#888888" : $selectedColor;
 
-      // Draw semi-transparent preview
+      // Get symmetric positions for cursor preview
+      const symmetricPositions = getSymmetricPositions(mousePos.x, mousePos.y);
+
       ctx.globalAlpha = 0.7;
-      ctx.shadowColor = cursorColor;
-      ctx.shadowBlur = 8;
 
-      // Outer glow border
-      ctx.strokeStyle = cursorColor;
-      ctx.lineWidth = 3;
-      ctx.strokeRect(
-        x - 1,
-        y - 1,
-        width + 2,
-        height + 2,
-      );
+      for (const pos of symmetricPositions) {
+        const x = pos.x * PIXEL_SIZE;
+        const y = pos.y * PIXEL_SIZE;
 
-      // Inner highlight
-      ctx.shadowBlur = 0;
-      ctx.strokeStyle = cursorColor;
-      ctx.lineWidth = 1.5;
-      ctx.strokeRect(
-        x + 2,
-        y + 2,
-        width - 4,
-        height - 4,
-      );
+        ctx.shadowColor = cursorColor;
+        ctx.shadowBlur = 8;
 
-      // Corner accents
-      const cornerSize = 4;
-      ctx.fillStyle = cursorColor;
-      ctx.fillRect(x - 2, y - 2, cornerSize, cornerSize);
-      ctx.fillRect(x + width - 2, y - 2, cornerSize, cornerSize);
-      ctx.fillRect(x - 2, y + height - 2, cornerSize, cornerSize);
-      ctx.fillRect(x + width - 2, y + height - 2, cornerSize, cornerSize);
+        // Outer glow border
+        ctx.strokeStyle = cursorColor;
+        ctx.lineWidth = 3;
+        ctx.strokeRect(
+          x - 1,
+          y - 1,
+          width + 2,
+          height + 2,
+        );
+
+        // Inner highlight
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = cursorColor;
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(
+          x + 2,
+          y + 2,
+          width - 4,
+          height - 4,
+        );
+
+        // Corner accents
+        const cornerSize = 4;
+        ctx.fillStyle = cursorColor;
+        ctx.fillRect(x - 2, y - 2, cornerSize, cornerSize);
+        ctx.fillRect(x + width - 2, y - 2, cornerSize, cornerSize);
+        ctx.fillRect(x - 2, y + height - 2, cornerSize, cornerSize);
+        ctx.fillRect(x + width - 2, y + height - 2, cornerSize, cornerSize);
+      }
 
       ctx.globalAlpha = 1.0;
       ctx.shadowBlur = 0;
@@ -224,9 +280,13 @@
   };
 
   const handleMouseLeave = () => {
-    isDrawing.set(false);
     lastDrawPos = { x: -1, y: -1 };
     mousePos = null;
+  };
+
+  const handleGlobalMouseUp = () => {
+    isDrawing.set(false);
+    lastDrawPos = { x: -1, y: -1 };
   };
 
   const drawPixel = (x: number, y: number) => {
@@ -234,15 +294,24 @@
     if (!socket) return;
 
     const size = $brushSize;
-    const pixels = [];
+    const pixels: { x: number; y: number }[] = [];
 
-    for (let dx = 0; dx < size; dx++) {
-      for (let dy = 0; dy < size; dy++) {
-        const px = x + dx;
-        const py = y + dy;
+    const symmetricBases = getSymmetricPositions(x, y);
 
-        if (px >= 0 && px < BOARD_SIZE && py >= 0 && py < BOARD_SIZE) {
-          pixels.push({ x: px, y: py });
+    // For each symmetric position, apply the brush size
+    for (const base of symmetricBases) {
+      for (let dx = 0; dx < size; dx++) {
+        for (let dy = 0; dy < size; dy++) {
+          const px = base.x + dx;
+          const py = base.y + dy;
+
+          if (px >= 0 && px < BOARD_SIZE && py >= 0 && py < BOARD_SIZE) {
+            // Avoid duplicates
+            const key = `${px},${py}`;
+            if (!pixels.some(p => `${p.x},${p.y}` === key)) {
+              pixels.push({ x: px, y: py });
+            }
+          }
         }
       }
     }
@@ -283,6 +352,9 @@
     canvas.addEventListener("mouseup", handleMouseUp);
     canvas.addEventListener("mouseleave", handleMouseLeave);
 
+    // Listen for mouseup globally to stop drawing even outside canvas
+    window.addEventListener("mouseup", handleGlobalMouseUp);
+
     const unsub1 = pixels.subscribe(scheduleRedraw);
     const unsub2 = cursors.subscribe(scheduleRedraw);
     const unsub3 = currentRoom.subscribe(scheduleRedraw);
@@ -299,6 +371,8 @@
       if (animationFrameId !== null) {
         cancelAnimationFrame(animationFrameId);
       }
+
+      window.removeEventListener("mouseup", handleGlobalMouseUp);
 
       if (canvas) {
         canvas.removeEventListener("mousedown", handleMouseDown);

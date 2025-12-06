@@ -27,6 +27,8 @@
   const handleDownload = () => {
     downloadCanvasImage($currentRoom?.name);
   };
+
+  let activeTab = $state<"draw" | "users" | "chat">("draw");
 </script>
 
 <div
@@ -53,16 +55,49 @@
       class="w-80 shrink-0 border-l-2 shadow-lg flex flex-col"
       style="background: var(--bg-secondary); border-color: var(--border-primary);"
     >
-      <div class="p-4">
-        <ColorPalette />
+      <div class="flex border-b" style="border-color: var(--border-primary);">
+        <button
+          onclick={() => activeTab = "draw"}
+          class={`flex-1 px-4 py-3 text-sm font-semibold transition-colors flex items-center justify-center gap-2 ${
+            activeTab === "draw" ? "border-b-2" : "opacity-60 hover:opacity-100"
+          }`}
+          style={activeTab === "draw" ? "border-color: var(--accent-primary); color: var(--accent-primary);" : "color: var(--text-secondary);"}
+        >
+          <span class="icon-[mdi--palette] text-base"></span>
+          <span>Draw</span>
+        </button>
+        <button
+          onclick={() => activeTab = "users"}
+          class={`flex-1 px-4 py-3 text-sm font-semibold transition-colors flex items-center justify-center gap-2 ${
+            activeTab === "users" ? "border-b-2" : "opacity-60 hover:opacity-100"
+          }`}
+          style={activeTab === "users" ? "border-color: var(--accent-primary); color: var(--accent-primary);" : "color: var(--text-secondary);"}
+        >
+          <span class="icon-[mdi--account-group] text-base"></span>
+          <span>Users</span>
+        </button>
+        <button
+          onclick={() => activeTab = "chat"}
+          class={`flex-1 px-4 py-3 text-sm font-semibold transition-colors flex items-center justify-center gap-2 ${
+            activeTab === "chat" ? "border-b-2" : "opacity-60 hover:opacity-100"
+          }`}
+          style={activeTab === "chat" ? "border-color: var(--accent-primary); color: var(--accent-primary);" : "color: var(--text-secondary);"}
+        >
+          <span class="icon-[mdi--chat] text-base"></span>
+          <span>Chat</span>
+        </button>
       </div>
-      <div class="flex-1 flex flex-col min-h-0 p-4 pt-0 gap-4">
-        <div class="shrink-0">
+
+      <div class="flex-1 overflow-auto p-4">
+        {#if activeTab === "draw"}
+          <ColorPalette />
+        {:else if activeTab === "users"}
           <UserList />
-        </div>
-        <div class="flex-1 min-h-0">
-          <Chat />
-        </div>
+        {:else if activeTab === "chat"}
+          <div class="h-full">
+            <Chat />
+          </div>
+        {/if}
       </div>
     </div>
   </div>
