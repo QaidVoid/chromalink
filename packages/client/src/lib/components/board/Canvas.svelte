@@ -6,6 +6,7 @@
     isDrawing,
     pixels,
     selectedColor,
+    users,
   } from "$lib/stores";
   import { assert, BOARD_SIZE, getPixelCoords, PIXEL_SIZE } from "$lib/utils";
   import { onMount } from "svelte";
@@ -43,16 +44,95 @@
       ctx.fillRect(x * PIXEL_SIZE, y * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE);
     }
 
-    // Cursors
-    for (const cursor of Object.values($cursors)) {
+    // Cursors with usernames
+    for (const [userId, cursor] of Object.entries($cursors)) {
+      const x = cursor.x * PIXEL_SIZE;
+      const y = cursor.y * PIXEL_SIZE;
+
+      // Draw fancy cursor with glow effect
+      ctx.shadowColor = cursor.color;
+      ctx.shadowBlur = 8;
+
+      // Outer glow border
       ctx.strokeStyle = cursor.color;
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 3;
       ctx.strokeRect(
-        cursor.x * PIXEL_SIZE,
-        cursor.y * PIXEL_SIZE,
-        PIXEL_SIZE,
-        PIXEL_SIZE,
+        x - 1,
+        y - 1,
+        PIXEL_SIZE + 2,
+        PIXEL_SIZE + 2,
       );
+
+      // Inner highlight
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = cursor.color;
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(
+        x + 2,
+        y + 2,
+        PIXEL_SIZE - 4,
+        PIXEL_SIZE - 4,
+      );
+
+      // Corner accents
+      const cornerSize = 4;
+      ctx.fillStyle = cursor.color;
+      // Top-left corner
+      ctx.fillRect(x - 2, y - 2, cornerSize, cornerSize);
+      // Top-right corner
+      ctx.fillRect(x + PIXEL_SIZE - 2, y - 2, cornerSize, cornerSize);
+      // Bottom-left corner
+      ctx.fillRect(x - 2, y + PIXEL_SIZE - 2, cornerSize, cornerSize);
+      // Bottom-right corner
+      ctx.fillRect(x + PIXEL_SIZE - 2, y + PIXEL_SIZE - 2, cornerSize, cornerSize);
+
+      ctx.shadowBlur = 0; // Reset shadow
+
+      // Find user nickname
+      const user = $users.find(u => u.id === userId);
+      if (user) {
+        const nickname = user.nickname;
+
+        // Measure text to create background
+        ctx.font = "bold 11px sans-serif";
+        const textMetrics = ctx.measureText(nickname);
+        const textWidth = textMetrics.width;
+        const textHeight = 11;
+        const padding = 5;
+        const borderRadius = 4;
+
+        const labelX = x;
+        const labelY = y - textHeight - padding * 2 - 4;
+
+        // Draw rounded rectangle background
+        ctx.fillStyle = cursor.color;
+        ctx.beginPath();
+        ctx.roundRect(
+          labelX - 2,
+          labelY - 2,
+          textWidth + padding * 2 + 4,
+          textHeight + padding * 2 + 4,
+          borderRadius
+        );
+        ctx.fill();
+
+        // Inner background
+        ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
+        ctx.beginPath();
+        ctx.roundRect(
+          labelX,
+          labelY,
+          textWidth + padding * 2,
+          textHeight + padding * 2,
+          borderRadius - 1
+        );
+        ctx.fill();
+
+        // Draw text
+        ctx.fillStyle = "#ffffff";
+        ctx.textBaseline = "top";
+        ctx.fillText(nickname, labelX + padding, labelY + padding);
+      }
     }
   };
 
@@ -102,11 +182,13 @@
     const unsub1 = pixels.subscribe(scheduleRedraw);
     const unsub2 = cursors.subscribe(scheduleRedraw);
     const unsub3 = currentRoom.subscribe(scheduleRedraw);
+    const unsub4 = users.subscribe(scheduleRedraw);
 
     return () => {
       unsub1();
       unsub2();
       unsub3();
+      unsub4();
 
       if (animationFrameId !== null) {
         cancelAnimationFrame(animationFrameId);

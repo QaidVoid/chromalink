@@ -65,7 +65,7 @@ export const initSocket = () => {
         return newCursors;
       });
       cursorTimeouts.delete(cursor.id);
-    }, 100);
+    }, 3000);
 
     cursorTimeouts.set(cursor.id, timeout);
   });
