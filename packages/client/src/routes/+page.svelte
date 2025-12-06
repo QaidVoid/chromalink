@@ -7,28 +7,28 @@
     {
       icon: "🎨",
       title: "Real-time Collaboration",
-      desc: "Draw together with friends instantly.",
+      desc: "See everyone's cursor. Draw together. No lag.",
     },
     {
       icon: "💬",
       title: "Live Chat",
-      desc: "Chat while you create, all in one place.",
+      desc: "Talk while you draw. Or just lurk. We don't judge.",
     },
     {
       icon: "🔓",
-      title: "Public or Private Rooms",
-      desc: "Share openly or protect with a password.",
+      title: "Public or Private",
+      desc: "Share your room or lock it down with a password.",
     },
-    { icon: "🔄", title: "Undo/Redo", desc: "Mistake? Just hit Ctrl+Z." },
+    { icon: "🔄", title: "Undo/Redo", desc: "Oops? Ctrl+Z. Crisis averted." },
     {
       icon: "🌈",
-      title: "Symmetry & Patterns",
-      desc: "Create stunning designs with advanced tools.",
+      title: "Symmetry Mode",
+      desc: "4-way, 8-way, radial—make patterns that look way cooler than they should.",
     },
     {
       icon: "☁️",
-      title: "No Signup Required",
-      desc: "Start drawing in seconds—no account needed.",
+      title: "No Signup",
+      desc: "Pick a nickname, click a button, start drawing. That's it.",
     },
   ];
 
@@ -83,7 +83,7 @@
           ? 0
           : 20}px); transition: all 0.6s ease-out 0.1s; color: var(--text-primary);"
       >
-        Collaborative pixel art, reimagined.
+        Draw pixels with friends. In real-time. For fun.
       </p>
       <p
         class="text-lg md:text-xl mb-10"
@@ -91,7 +91,7 @@
           ? 0
           : 20}px); transition: all 0.6s ease-out 0.15s; color: var(--text-secondary);"
       >
-        Create stunning pixel art together in real-time
+        A collaborative pixel art canvas that actually works
       </p>
       <button
         onclick={startDrawing}
@@ -122,7 +122,7 @@
   >
     <div class="max-w-7xl mx-auto px-6">
       <h2 class="text-4xl font-bold text-center mb-16" style="color: var(--text-primary);">
-        Why Artists Love Chromalink
+        What's included
       </h2>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
         {#each features as feature, i}
@@ -151,13 +151,18 @@
     class="py-8 text-center text-sm relative z-10 border-t"
     style="color: var(--text-tertiary); border-color: var(--border-primary);"
   >
+    <p class="mb-2">
+      Built with Svelte 5 + WebSockets
+    </p>
     <a
       href="https://github.com/QaidVoid/chromalink"
       target="_blank"
-      class="transition-colors"
+      class="transition-colors hover:underline inline-flex items-center gap-1"
       style="color: var(--accent-primary);"
-      >Open Source</a
     >
+      <span class="icon-[mdi--github]"></span>
+      <span>View source on GitHub</span>
+    </a>
   </footer>
 </div>
 

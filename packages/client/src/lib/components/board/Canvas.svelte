@@ -9,6 +9,7 @@
     brushSize,
     symmetryMode,
     users,
+    history,
   } from "$lib/stores";
   import { assert, BOARD_SIZE, getPixelCoords, PIXEL_SIZE } from "$lib/utils";
   import { onMount } from "svelte";
@@ -286,7 +287,7 @@
     if (!socket) return;
 
     const size = $brushSize;
-    const pixels: { x: number; y: number }[] = [];
+    const pixelsToChange: { x: number; y: number }[] = [];
     const pixelSet = new Set<string>();
 
     // Calculate brush offset to center it
@@ -306,19 +307,74 @@
             const key = `${pos.x},${pos.y}`;
             if (!pixelSet.has(key)) {
               pixelSet.add(key);
-              pixels.push({ x: pos.x, y: pos.y });
+              pixelsToChange.push({ x: pos.x, y: pos.y });
             }
           }
         }
       }
     }
 
-    if (pixels.length === 0) return;
+    if (pixelsToChange.length === 0) return;
 
-    if ($selectedColor === "#ERASER") {
-      socket.emit("batch-erase-pixels", { pixels });
+    // Save previous state for undo
+    const previousState = pixelsToChange.map((p) => ({
+      x: p.x,
+      y: p.y,
+      color: $pixels[`${p.x},${p.y}`],
+    }));
+
+    // Emit the action
+    const isErasing = $selectedColor === "#ERASER";
+    if (isErasing) {
+      socket.emit("batch-erase-pixels", { pixels: pixelsToChange });
     } else {
-      socket.emit("batch-draw-pixels", { pixels, color: $selectedColor });
+      socket.emit("batch-draw-pixels", { pixels: pixelsToChange, color: $selectedColor });
+    }
+
+    // Add to history
+    history.addAction({
+      type: isErasing ? "erase" : "draw",
+      pixels: pixelsToChange.map((p) => ({ ...p, color: $selectedColor })),
+      previousState,
+      timestamp: Date.now(),
+    });
+  };
+
+  const handleUndo = () => {
+    const action = history.undo();
+    if (!action) return;
+
+    const socket = getSocket();
+    if (!socket) return;
+
+    // Restore previous state
+    for (const pixel of action.previousState) {
+      if (pixel.color) {
+        socket.emit("batch-draw-pixels", {
+          pixels: [{ x: pixel.x, y: pixel.y }],
+          color: pixel.color,
+        });
+      } else {
+        socket.emit("batch-erase-pixels", { pixels: [{ x: pixel.x, y: pixel.y }] });
+      }
+    }
+  };
+
+  const handleRedo = () => {
+    const action = history.redo();
+    if (!action) return;
+
+    const socket = getSocket();
+    if (!socket) return;
+
+    // Reapply the action
+    if (action.type === "erase") {
+      socket.emit("batch-erase-pixels", { pixels: action.pixels });
+    } else {
+      const color = action.pixels[0]?.color;
+      if (color) {
+        socket.emit("batch-draw-pixels", { pixels: action.pixels, color });
+      }
     }
   };
 
@@ -352,6 +408,20 @@
     // Listen for mouseup globally to stop drawing even outside canvas
     window.addEventListener("mouseup", handleGlobalMouseUp);
 
+    // Keyboard shortcuts for undo/redo
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        if (e.key === "z" && !e.shiftKey) {
+          e.preventDefault();
+          handleUndo();
+        } else if (e.key === "y" || (e.key === "z" && e.shiftKey)) {
+          e.preventDefault();
+          handleRedo();
+        }
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+
     const unsub1 = pixels.subscribe(scheduleRedraw);
     const unsub2 = cursors.subscribe(scheduleRedraw);
     const unsub3 = currentRoom.subscribe(scheduleRedraw);
@@ -370,6 +440,7 @@
       }
 
       window.removeEventListener("mouseup", handleGlobalMouseUp);
+      window.removeEventListener("keydown", handleKeyDown);
 
       if (canvas) {
         canvas.removeEventListener("mousedown", handleMouseDown);
