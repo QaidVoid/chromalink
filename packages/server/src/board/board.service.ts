@@ -97,6 +97,7 @@ export class BoardService implements OnModuleInit {
     x: number,
     y: number,
     color: string,
+    size: number,
   ) {
     this.ensureRoom(roomId);
 
@@ -104,7 +105,15 @@ export class BoardService implements OnModuleInit {
     assert(roomUsers, "Room users not found");
 
     const nickname = this.getNickname(socketId);
-    roomUsers.set(socketId, { id: socketId, userId, nickname, x, y, color });
+    roomUsers.set(socketId, {
+      id: socketId,
+      userId,
+      nickname,
+      x,
+      y,
+      color,
+      size,
+    });
   }
 
   addUser(roomId: string, socketId: string, userId: string) {
@@ -122,6 +131,7 @@ export class BoardService implements OnModuleInit {
       x: 0,
       y: 0,
       color: DEFAULT_USER_COLOR,
+      size: 1,
     });
   }
 
@@ -164,5 +174,48 @@ export class BoardService implements OnModuleInit {
 
   getNickname(userId: string): string {
     return this.nicknames.get(userId) || "Anonymous";
+  }
+
+  async batchSetPixels(
+    roomId: string,
+    pixels: { x: number; y: number }[],
+    color: string,
+  ): Promise<{ x: number; y: number; color: string }[]> {
+    this.ensureRoom(roomId);
+
+    const board = this.boards.get(roomId);
+    assert(board, "Board not found");
+
+    const result: { x: number; y: number; color: string }[] = [];
+    for (const { x, y } of pixels) {
+      const key = `${x},${y}`;
+      board.set(key, color);
+      result.push({ x, y, color });
+    }
+
+    this.databaseService
+      .batchSetPixels(roomId, result)
+      .catch((err) => console.error("Batch set pixels error:", err));
+
+    return result;
+  }
+
+  async batchErasePixels(
+    roomId: string,
+    pixels: { x: number; y: number }[],
+  ): Promise<void> {
+    this.ensureRoom(roomId);
+
+    const board = this.boards.get(roomId);
+    assert(board, "Board not found");
+
+    for (const { x, y } of pixels) {
+      const key = `${x},${y}`;
+      board.delete(key);
+    }
+
+    this.databaseService
+      .batchDeletePixels(roomId, pixels)
+      .catch((err) => console.error("Batch delete pixels error:", err));
   }
 }

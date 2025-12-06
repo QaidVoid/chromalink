@@ -11,4 +11,5 @@ export interface User {
   x: number;
   y: number;
   color: string;
+  size: number;
 }

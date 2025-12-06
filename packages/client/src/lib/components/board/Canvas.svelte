@@ -6,12 +6,14 @@
     isDrawing,
     pixels,
     selectedColor,
+    brushSize,
     users,
   } from "$lib/stores";
   import { assert, BOARD_SIZE, getPixelCoords, PIXEL_SIZE } from "$lib/utils";
   import { onMount } from "svelte";
 
   let canvas: HTMLCanvasElement;
+  let mousePos = $state<{ x: number; y: number } | null>(null);
 
   const draw = () => {
     const ctx = canvas.getContext("2d");
@@ -48,6 +50,9 @@
     for (const [userId, cursor] of Object.entries($cursors)) {
       const x = cursor.x * PIXEL_SIZE;
       const y = cursor.y * PIXEL_SIZE;
+      const cursorSize = cursor.size || 1;
+      const width = cursorSize * PIXEL_SIZE;
+      const height = cursorSize * PIXEL_SIZE;
 
       // Draw fancy cursor with glow effect
       ctx.shadowColor = cursor.color;
@@ -59,8 +64,8 @@
       ctx.strokeRect(
         x - 1,
         y - 1,
-        PIXEL_SIZE + 2,
-        PIXEL_SIZE + 2,
+        width + 2,
+        height + 2,
       );
 
       // Inner highlight
@@ -70,8 +75,8 @@
       ctx.strokeRect(
         x + 2,
         y + 2,
-        PIXEL_SIZE - 4,
-        PIXEL_SIZE - 4,
+        width - 4,
+        height - 4,
       );
 
       // Corner accents
@@ -80,11 +85,11 @@
       // Top-left corner
       ctx.fillRect(x - 2, y - 2, cornerSize, cornerSize);
       // Top-right corner
-      ctx.fillRect(x + PIXEL_SIZE - 2, y - 2, cornerSize, cornerSize);
+      ctx.fillRect(x + width - 2, y - 2, cornerSize, cornerSize);
       // Bottom-left corner
-      ctx.fillRect(x - 2, y + PIXEL_SIZE - 2, cornerSize, cornerSize);
+      ctx.fillRect(x - 2, y + height - 2, cornerSize, cornerSize);
       // Bottom-right corner
-      ctx.fillRect(x + PIXEL_SIZE - 2, y + PIXEL_SIZE - 2, cornerSize, cornerSize);
+      ctx.fillRect(x + width - 2, y + height - 2, cornerSize, cornerSize);
 
       ctx.shadowBlur = 0; // Reset shadow
 
@@ -134,6 +139,53 @@
         ctx.fillText(nickname, labelX + padding, labelY + padding);
       }
     }
+
+    // Draw local cursor preview
+    if (mousePos) {
+      const x = mousePos.x * PIXEL_SIZE;
+      const y = mousePos.y * PIXEL_SIZE;
+      const cursorSize = $brushSize;
+      const width = cursorSize * PIXEL_SIZE;
+      const height = cursorSize * PIXEL_SIZE;
+      const cursorColor = $selectedColor === "#ERASER" ? "#888888" : $selectedColor;
+
+      // Draw semi-transparent preview
+      ctx.globalAlpha = 0.7;
+      ctx.shadowColor = cursorColor;
+      ctx.shadowBlur = 8;
+
+      // Outer glow border
+      ctx.strokeStyle = cursorColor;
+      ctx.lineWidth = 3;
+      ctx.strokeRect(
+        x - 1,
+        y - 1,
+        width + 2,
+        height + 2,
+      );
+
+      // Inner highlight
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = cursorColor;
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(
+        x + 2,
+        y + 2,
+        width - 4,
+        height - 4,
+      );
+
+      // Corner accents
+      const cornerSize = 4;
+      ctx.fillStyle = cursorColor;
+      ctx.fillRect(x - 2, y - 2, cornerSize, cornerSize);
+      ctx.fillRect(x + width - 2, y - 2, cornerSize, cornerSize);
+      ctx.fillRect(x - 2, y + height - 2, cornerSize, cornerSize);
+      ctx.fillRect(x + width - 2, y + height - 2, cornerSize, cornerSize);
+
+      ctx.globalAlpha = 1.0;
+      ctx.shadowBlur = 0;
+    }
   };
 
   const handleMouseDown = (e: MouseEvent) => {
@@ -142,28 +194,73 @@
     drawPixel(x, y);
   };
 
+  let lastCursorEmit = 0;
+  let lastDrawPos = { x: -1, y: -1 };
+
   const handleMouseMove = (e: MouseEvent) => {
     const { x, y } = getPixelCoords(canvas, e.clientX, e.clientY);
-    getSocket()?.emit("cursor-move", { x, y, color: $selectedColor });
-    if ($isDrawing) drawPixel(x, y);
+
+    // Update local cursor position
+    mousePos = { x, y };
+
+    // Throttle cursor-move events to 50ms
+    const now = Date.now();
+    if (now - lastCursorEmit > 50) {
+      const cursorColor = $selectedColor === "#ERASER" ? "#888888" : $selectedColor;
+      getSocket()?.emit("cursor-move", { x, y, color: cursorColor, size: $brushSize });
+      lastCursorEmit = now;
+    }
+
+    // Only draw if position changed
+    if ($isDrawing && (lastDrawPos.x !== x || lastDrawPos.y !== y)) {
+      drawPixel(x, y);
+      lastDrawPos = { x, y };
+    }
   };
 
   const handleMouseUp = () => {
     isDrawing.set(false);
+    lastDrawPos = { x: -1, y: -1 };
+  };
+
+  const handleMouseLeave = () => {
+    isDrawing.set(false);
+    lastDrawPos = { x: -1, y: -1 };
+    mousePos = null;
   };
 
   const drawPixel = (x: number, y: number) => {
-    if (x >= 0 && x < BOARD_SIZE && y >= 0 && y < BOARD_SIZE) {
-      const socket = getSocket();
-      if (!socket) return;
+    const socket = getSocket();
+    if (!socket) return;
 
-      if ($selectedColor === "#ERASER") {
-        socket.emit("erase-pixel", { x, y });
-      } else {
-        socket.emit("draw-pixel", { x, y, color: $selectedColor });
+    const size = $brushSize;
+    const pixels = [];
+
+    for (let dx = 0; dx < size; dx++) {
+      for (let dy = 0; dy < size; dy++) {
+        const px = x + dx;
+        const py = y + dy;
+
+        if (px >= 0 && px < BOARD_SIZE && py >= 0 && py < BOARD_SIZE) {
+          pixels.push({ x: px, y: py });
+        }
       }
     }
+
+    if (pixels.length === 0) return;
+
+    if ($selectedColor === "#ERASER") {
+      socket.emit("batch-erase-pixels", { pixels });
+    } else {
+      socket.emit("batch-draw-pixels", { pixels, color: $selectedColor });
+    }
   };
+
+  $effect(() => {
+    if (mousePos && canvas) {
+      draw();
+    }
+  });
 
   onMount(() => {
     if (!canvas) return;
@@ -184,18 +281,20 @@
     canvas.addEventListener("mousedown", handleMouseDown);
     canvas.addEventListener("mousemove", handleMouseMove);
     canvas.addEventListener("mouseup", handleMouseUp);
-    canvas.addEventListener("mouseleave", handleMouseUp);
+    canvas.addEventListener("mouseleave", handleMouseLeave);
 
     const unsub1 = pixels.subscribe(scheduleRedraw);
     const unsub2 = cursors.subscribe(scheduleRedraw);
     const unsub3 = currentRoom.subscribe(scheduleRedraw);
     const unsub4 = users.subscribe(scheduleRedraw);
+    const unsub5 = brushSize.subscribe(scheduleRedraw);
 
     return () => {
       unsub1();
       unsub2();
       unsub3();
       unsub4();
+      unsub5();
 
       if (animationFrameId !== null) {
         cancelAnimationFrame(animationFrameId);
@@ -205,7 +304,7 @@
         canvas.removeEventListener("mousedown", handleMouseDown);
         canvas.removeEventListener("mousemove", handleMouseMove);
         canvas.removeEventListener("mouseup", handleMouseUp);
-        canvas.removeEventListener("mouseleave", handleMouseUp);
+        canvas.removeEventListener("mouseleave", handleMouseLeave);
       }
     };
   });
@@ -215,5 +314,6 @@
   bind:this={canvas}
   width={BOARD_SIZE * PIXEL_SIZE}
   height={BOARD_SIZE * PIXEL_SIZE}
-  class="border-4 border-gray-300 rounded-lg cursor-crosshair shadow-lg w-full"
+  class="border-4 border-gray-300 rounded-lg shadow-lg w-full"
+  style="cursor: none;"
 ></canvas>

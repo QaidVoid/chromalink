@@ -1,10 +1,12 @@
 <script lang="ts">
-  import { selectedColor } from "$lib/stores";
+  import { selectedColor, brushSize } from "$lib/stores";
   import { colors as roomColors } from "$lib/stores/room";
 
   let { colors = $roomColors } = $props();
 
   const ERASER = "#ERASER";
+  const MIN_BRUSH_SIZE = 1;
+  const MAX_BRUSH_SIZE = 8;
 </script>
 
 <div>
@@ -59,6 +61,35 @@
           >{$selectedColor}</span
         >
       {/if}
+    </div>
+  </div>
+  <div class="mt-4">
+    <div class="flex items-center gap-2 mb-3">
+      <span class="icon-[mdi--brush] text-lg" style="color: var(--accent-primary);"></span>
+      <h3 class="text-base font-bold" style="color: var(--text-primary);">Brush Size</h3>
+    </div>
+    <div class="space-y-3">
+      <div class="flex items-center gap-3">
+        <input
+          type="range"
+          min={MIN_BRUSH_SIZE}
+          max={MAX_BRUSH_SIZE}
+          value={$brushSize}
+          oninput={(e) => brushSize.set(Number(e.currentTarget.value))}
+          class="flex-1 h-2 rounded-lg appearance-none cursor-pointer"
+          style="background: linear-gradient(to right, var(--accent-primary) 0%, var(--accent-primary) {(($brushSize - MIN_BRUSH_SIZE) / (MAX_BRUSH_SIZE - MIN_BRUSH_SIZE)) * 100}%, var(--border-primary) {(($brushSize - MIN_BRUSH_SIZE) / (MAX_BRUSH_SIZE - MIN_BRUSH_SIZE)) * 100}%, var(--border-primary) 100%);"
+        />
+        <div
+          class="w-12 h-12 rounded-lg ring-2 shadow-sm flex items-center justify-center shrink-0"
+          style="background: var(--bg-tertiary); border-color: var(--accent-primary);"
+        >
+          <span class="font-mono text-sm font-bold" style="color: var(--text-primary);">{$brushSize}x{$brushSize}</span>
+        </div>
+      </div>
+      <div class="flex items-center justify-between text-xs" style="color: var(--text-secondary);">
+        <span>{MIN_BRUSH_SIZE}x{MIN_BRUSH_SIZE}</span>
+        <span>{MAX_BRUSH_SIZE}x{MAX_BRUSH_SIZE}</span>
+      </div>
     </div>
   </div>
 </div>

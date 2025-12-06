@@ -11,6 +11,8 @@ import type { Server, Socket } from "socket.io";
 import { AuthService } from "src/common/auth.service";
 import { BoardService } from "src/board/board.service";
 import {
+  BatchDrawPixelsSchema,
+  BatchErasePixelsSchema,
   ChatMessageSchema,
   CreateRoomSchema,
   CursorMoveSchema,
@@ -359,6 +361,35 @@ export class PixelBoardGateway
     }
   }
 
+  @SubscribeMessage("batch-draw-pixels")
+  async handleBatchDrawPixels(
+    @MessageBody() data: unknown,
+    @ConnectedSocket() client: Socket,
+  ) {
+    const result = safeParse(BatchDrawPixelsSchema, data);
+    if (!result.success) {
+      client.emit("error", result.issues[0]?.message || "Invalid data");
+      return;
+    }
+
+    const roomId = this.userRooms.get(client.id);
+    if (!roomId) {
+      client.emit("error", "Not in a room");
+      return;
+    }
+
+    try {
+      const pixels = await this.boardService.batchSetPixels(
+        roomId,
+        result.output.pixels,
+        result.output.color,
+      );
+      this.server.to(roomId).emit("batch-pixels-update", pixels);
+    } catch (error) {
+      client.emit("error", error.message);
+    }
+  }
+
   @SubscribeMessage("erase-pixel")
   async handleErasePixel(
     @MessageBody() data: unknown,
@@ -377,8 +408,39 @@ export class PixelBoardGateway
     }
 
     try {
-      await this.boardService.erasePixel(roomId, result.output.x, result.output.y);
-      this.server.to(roomId).emit("pixel-erased", { x: result.output.x, y: result.output.y });
+      await this.boardService.erasePixel(
+        roomId,
+        result.output.x,
+        result.output.y,
+      );
+      this.server
+        .to(roomId)
+        .emit("pixel-erased", { x: result.output.x, y: result.output.y });
+    } catch (error) {
+      client.emit("error", error.message);
+    }
+  }
+
+  @SubscribeMessage("batch-erase-pixels")
+  async handleBatchErasePixels(
+    @MessageBody() data: unknown,
+    @ConnectedSocket() client: Socket,
+  ) {
+    const result = safeParse(BatchErasePixelsSchema, data);
+    if (!result.success) {
+      client.emit("error", result.issues[0]?.message || "Invalid data");
+      return;
+    }
+
+    const roomId = this.userRooms.get(client.id);
+    if (!roomId) {
+      client.emit("error", "Not in a room");
+      return;
+    }
+
+    try {
+      await this.boardService.batchErasePixels(roomId, result.output.pixels);
+      this.server.to(roomId).emit("batch-pixels-erased", result.output.pixels);
     } catch (error) {
       client.emit("error", error.message);
     }
@@ -405,12 +467,14 @@ export class PixelBoardGateway
       result.output.x,
       result.output.y,
       result.output.color,
+      result.output.size,
     );
     client.to(roomId).emit("cursor-update", {
       id: client.id,
       x: result.output.x,
       y: result.output.y,
       color: result.output.color,
+      size: result.output.size,
     });
   }
 

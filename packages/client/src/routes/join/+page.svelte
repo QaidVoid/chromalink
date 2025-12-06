@@ -24,10 +24,10 @@
     if ($nickname.trim().length === 0) {
       joinPageState.set("nickname");
     }
+  });
 
-    $effect(() => {
-      if ($currentRoom) goto(`/room/${$currentRoom.id}`);
-    });
+  $effect(() => {
+    if ($currentRoom) goto(`/room/${$currentRoom.id}`);
   });
 
   const joinRoom = (roomId: string, hasPassword: boolean) => {

@@ -48,10 +48,30 @@ export const initSocket = () => {
     }));
   });
 
+  socket.on("batch-pixels-update", (pixelList) => {
+    pixels.update((p) => {
+      const newPixels = { ...p };
+      for (const pixel of pixelList) {
+        newPixels[`${pixel.x},${pixel.y}`] = pixel.color;
+      }
+      return newPixels;
+    });
+  });
+
   socket.on("pixel-erased", (data) => {
     pixels.update((p) => {
       const newPixels = { ...p };
       delete newPixels[`${data.x},${data.y}`];
+      return newPixels;
+    });
+  });
+
+  socket.on("batch-pixels-erased", (coords) => {
+    pixels.update((p) => {
+      const newPixels = { ...p };
+      for (const coord of coords) {
+        delete newPixels[`${coord.x},${coord.y}`];
+      }
       return newPixels;
     });
   });
