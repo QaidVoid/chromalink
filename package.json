@@ -1,5 +1,38 @@
 {
   "name": "chromalink",
+  "version": "1.0.0",
+  "description": "Real-time collaborative pixel art canvas",
   "private": true,
-  "workspaces": ["packages/*"]
+  "workspaces": ["packages/*"],
+  "scripts": {
+    "dev": "bun run --filter client dev & bun run --filter server start:dev",
+    "dev:client": "bun run --filter client dev",
+    "dev:server": "bun run --filter server start:dev",
+    "build": "bun run build:client && bun run build:server",
+    "build:client": "bun run --filter client build",
+    "build:server": "bun run --filter server build",
+    "start": "bun run --filter server start:prod",
+    "preview": "bun run --filter client preview",
+    "check": "bun run --filter client check",
+    "lint": "bun run --filter server lint",
+    "format": "bun run --filter server format",
+    "clean": "rm -rf packages/*/node_modules packages/*/.svelte-kit packages/*/dist node_modules"
+  },
+  "keywords": [
+    "pixel-art",
+    "collaborative",
+    "real-time",
+    "websockets",
+    "svelte",
+    "canvas"
+  ],
+  "author": "QaidVoid",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/QaidVoid/chromalink.git"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
 }
