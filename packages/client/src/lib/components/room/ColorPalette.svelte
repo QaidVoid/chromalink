@@ -74,7 +74,7 @@
 
   <div>
     <div class="flex items-center gap-2 mb-2">
-      <span class="icon-[mdi--symmetry] text-base" style="color: var(--accent-primary);"></span>
+      <span class="icon-[mdi--mirror-rectangle] text-base" style="color: var(--accent-primary);"></span>
       <h3 class="text-sm font-bold" style="color: var(--text-primary);">Symmetry</h3>
     </div>
     <div class="grid grid-cols-3 gap-2">

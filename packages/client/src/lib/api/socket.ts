@@ -12,6 +12,7 @@ import {
 } from "$lib/stores";
 import { authTokenStore } from "$lib/stores/user";
 import { leaveRoom } from "$lib/utils";
+import { PUBLIC_API_URL } from "$env/static/public";
 
 let socket: Socket | null = null;
 

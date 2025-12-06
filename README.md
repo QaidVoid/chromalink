@@ -75,6 +75,39 @@ bun run build:client
 bun run build:server
 ```
 
+## Deployment
+
+### Environment Variables
+
+**Client** (`packages/client/.env`):
+```bash
+PUBLIC_API_URL=https://your-backend-url.com
+```
+
+**Server** (configure as needed for your backend):
+- `PORT` - Server port (default: 3000)
+- `CORS_ORIGIN` - Allowed CORS origins
+
+### Deployment Steps
+
+1. **Build everything**:
+   ```bash
+   bun run build
+   ```
+
+2. **Deploy the backend** (server):
+   - Deploy `packages/server` to your hosting platform
+   - Set environment variables
+   - Ensure WebSocket support is enabled
+
+3. **Deploy the frontend** (client):
+   - Set `PUBLIC_API_URL` to your backend URL
+   - Deploy `packages/client` to Vercel, Netlify, or similar
+   - The build output is in `packages/client/build`
+
+4. **CORS Configuration**:
+   - Make sure your backend allows requests from your frontend domain
+
 ## Project Structure
 
 ```
