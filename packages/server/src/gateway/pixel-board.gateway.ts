@@ -25,7 +25,15 @@ import {
 import { RoomsService } from "src/rooms/rooms.service";
 import { safeParse } from "valibot";
 
-@WebSocketGateway()
+@WebSocketGateway({
+  cors: {
+    origin: process.env.CORS_ORIGINS
+      ? process.env.CORS_ORIGINS.split(",").map((origin) => origin.trim())
+      : "*",
+    credentials: true,
+    methods: ["GET", "POST"],
+  },
+})
 export class PixelBoardGateway
   implements OnGatewayConnection, OnGatewayDisconnect
 {

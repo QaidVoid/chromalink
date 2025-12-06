@@ -84,9 +84,19 @@ bun run build:server
 PUBLIC_API_URL=https://your-backend-url.com
 ```
 
-**Server** (configure as needed for your backend):
-- `PORT` - Server port (default: 3000)
-- `CORS_ORIGIN` - Allowed CORS origins
+**Server** (`packages/server/.env`):
+```bash
+PORT=3000
+
+# CORS Configuration - IMPORTANT for production!
+# Single origin:
+CORS_ORIGINS=https://your-frontend.com
+
+# Multiple origins (comma-separated):
+CORS_ORIGINS=https://app.com,https://www.app.com
+
+# Leave unset for development (allows all origins)
+```
 
 ### Deployment Steps
 

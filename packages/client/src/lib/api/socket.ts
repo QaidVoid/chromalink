@@ -19,7 +19,8 @@ let socket: Socket | null = null;
 export const initSocket = () => {
   if (socket) return socket;
 
-  socket = io();
+  const socketUrl = PUBLIC_API_URL || window.location.origin;
+  socket = io(socketUrl);
 
   socket.on("user-authenticated", (data: { userId: string; token: string }) => {
     authTokenStore.setToken(data.token);
