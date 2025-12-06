@@ -87,7 +87,6 @@ export const BatchDrawPixelsSchema = object({
         ),
       }),
     ),
-    maxLength(64, "Cannot draw more than 64 pixels at once"),
   ),
   color: pipe(
     string(),
@@ -128,7 +127,6 @@ export const BatchErasePixelsSchema = object({
         ),
       }),
     ),
-    maxLength(64, "Cannot erase more than 64 pixels at once"),
   ),
 });
 

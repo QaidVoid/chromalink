@@ -11,7 +11,6 @@ export const DRAWING_COLORS = [
 
   "#BB9AF7",
   "#C0CAF5",
-  "#F7768E",
   "#FF007C",
 
   "#FFFFFF",

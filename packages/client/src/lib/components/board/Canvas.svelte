@@ -17,24 +17,24 @@
   let mousePos = $state<{ x: number; y: number } | null>(null);
 
   const getSymmetricPositions = (x: number, y: number): { x: number; y: number }[] => {
-    const center = BOARD_SIZE / 2;
+    const center = (BOARD_SIZE - 1) / 2;
     const positions: { x: number; y: number }[] = [{ x, y }];
 
     if ($symmetryMode === "none") return positions;
 
     if ($symmetryMode === "horizontal" || $symmetryMode === "both") {
-      const mirrorX = Math.floor(BOARD_SIZE - 1 - x);
+      const mirrorX = BOARD_SIZE - 1 - x;
       positions.push({ x: mirrorX, y });
     }
 
     if ($symmetryMode === "vertical" || $symmetryMode === "both") {
-      const mirrorY = Math.floor(BOARD_SIZE - 1 - y);
+      const mirrorY = BOARD_SIZE - 1 - y;
       positions.push({ x, y: mirrorY });
     }
 
     if ($symmetryMode === "both") {
-      const mirrorX = Math.floor(BOARD_SIZE - 1 - x);
-      const mirrorY = Math.floor(BOARD_SIZE - 1 - y);
+      const mirrorX = BOARD_SIZE - 1 - x;
+      const mirrorY = BOARD_SIZE - 1 - y;
       positions.push({ x: mirrorX, y: mirrorY });
     }
 
@@ -42,9 +42,9 @@
       const dx = x - center;
       const dy = y - center;
       positions.push(
-        { x: Math.floor(center - dx), y: Math.floor(center + dy) },
-        { x: Math.floor(center + dy), y: Math.floor(center - dx) },
-        { x: Math.floor(center - dy), y: Math.floor(center + dx) },
+        { x: Math.round(center - dx), y: Math.round(center - dy) },
+        { x: Math.round(center + dy), y: Math.round(center - dx) },
+        { x: Math.round(center - dy), y: Math.round(center + dx) },
       );
     }
 
@@ -52,13 +52,13 @@
       const dx = x - center;
       const dy = y - center;
       positions.push(
-        { x: Math.floor(center - dx), y: Math.floor(center + dy) },
-        { x: Math.floor(center + dx), y: Math.floor(center - dy) },
-        { x: Math.floor(center - dx), y: Math.floor(center - dy) },
-        { x: Math.floor(center + dy), y: Math.floor(center + dx) },
-        { x: Math.floor(center - dy), y: Math.floor(center + dx) },
-        { x: Math.floor(center + dy), y: Math.floor(center - dx) },
-        { x: Math.floor(center - dy), y: Math.floor(center - dx) },
+        { x: Math.round(center - dx), y: Math.round(center + dy) },
+        { x: Math.round(center + dx), y: Math.round(center - dy) },
+        { x: Math.round(center - dx), y: Math.round(center - dy) },
+        { x: Math.round(center + dy), y: Math.round(center + dx) },
+        { x: Math.round(center - dy), y: Math.round(center + dx) },
+        { x: Math.round(center + dy), y: Math.round(center - dx) },
+        { x: Math.round(center - dy), y: Math.round(center - dx) },
       );
     }
 
@@ -193,54 +193,46 @@
     // Draw local cursor preview with symmetry
     if (mousePos) {
       const cursorSize = $brushSize;
-      const width = cursorSize * PIXEL_SIZE;
-      const height = cursorSize * PIXEL_SIZE;
       const cursorColor = $selectedColor === "#ERASER" ? "#888888" : $selectedColor;
+      const offset = Math.floor(cursorSize / 2);
 
-      // Get symmetric positions for cursor preview
-      const symmetricPositions = getSymmetricPositions(mousePos.x, mousePos.y);
+      const previewPixels = new Set<string>();
 
-      ctx.globalAlpha = 0.7;
+      for (let dx = -offset; dx < cursorSize - offset; dx++) {
+        for (let dy = -offset; dy < cursorSize - offset; dy++) {
+          const brushX = mousePos.x + dx;
+          const brushY = mousePos.y + dy;
 
-      for (const pos of symmetricPositions) {
-        const x = pos.x * PIXEL_SIZE;
-        const y = pos.y * PIXEL_SIZE;
+          const symmetricPositions = getSymmetricPositions(brushX, brushY);
 
-        ctx.shadowColor = cursorColor;
-        ctx.shadowBlur = 8;
+          for (const pos of symmetricPositions) {
+            if (pos.x >= 0 && pos.x < BOARD_SIZE && pos.y >= 0 && pos.y < BOARD_SIZE) {
+              previewPixels.add(`${pos.x},${pos.y}`);
+            }
+          }
+        }
+      }
 
-        // Outer glow border
-        ctx.strokeStyle = cursorColor;
-        ctx.lineWidth = 3;
-        ctx.strokeRect(
-          x - 1,
-          y - 1,
-          width + 2,
-          height + 2,
-        );
+      // Draw preview pixels
+      ctx.globalAlpha = 0.5;
+      ctx.fillStyle = cursorColor;
 
-        // Inner highlight
-        ctx.shadowBlur = 0;
-        ctx.strokeStyle = cursorColor;
-        ctx.lineWidth = 1.5;
-        ctx.strokeRect(
-          x + 2,
-          y + 2,
-          width - 4,
-          height - 4,
-        );
+      for (const key of previewPixels) {
+        const [x, y] = key.split(",").map(Number);
+        ctx.fillRect(x * PIXEL_SIZE, y * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE);
+      }
 
-        // Corner accents
-        const cornerSize = 4;
-        ctx.fillStyle = cursorColor;
-        ctx.fillRect(x - 2, y - 2, cornerSize, cornerSize);
-        ctx.fillRect(x + width - 2, y - 2, cornerSize, cornerSize);
-        ctx.fillRect(x - 2, y + height - 2, cornerSize, cornerSize);
-        ctx.fillRect(x + width - 2, y + height - 2, cornerSize, cornerSize);
+      // Draw border around preview pixels for visibility
+      ctx.globalAlpha = 0.8;
+      ctx.strokeStyle = cursorColor;
+      ctx.lineWidth = 1;
+
+      for (const key of previewPixels) {
+        const [x, y] = key.split(",").map(Number);
+        ctx.strokeRect(x * PIXEL_SIZE, y * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE);
       }
 
       ctx.globalAlpha = 1.0;
-      ctx.shadowBlur = 0;
     }
   };
 
@@ -295,21 +287,26 @@
 
     const size = $brushSize;
     const pixels: { x: number; y: number }[] = [];
+    const pixelSet = new Set<string>();
 
-    const symmetricBases = getSymmetricPositions(x, y);
+    // Calculate brush offset to center it
+    const offset = Math.floor(size / 2);
 
-    // For each symmetric position, apply the brush size
-    for (const base of symmetricBases) {
-      for (let dx = 0; dx < size; dx++) {
-        for (let dy = 0; dy < size; dy++) {
-          const px = base.x + dx;
-          const py = base.y + dy;
+    // For each pixel in the centered brush, get its symmetric positions
+    for (let dx = -offset; dx < size - offset; dx++) {
+      for (let dy = -offset; dy < size - offset; dy++) {
+        const brushX = x + dx;
+        const brushY = y + dy;
 
-          if (px >= 0 && px < BOARD_SIZE && py >= 0 && py < BOARD_SIZE) {
-            // Avoid duplicates
-            const key = `${px},${py}`;
-            if (!pixels.some(p => `${p.x},${p.y}` === key)) {
-              pixels.push({ x: px, y: py });
+        // Get symmetric positions for this specific brush pixel
+        const symmetricPositions = getSymmetricPositions(brushX, brushY);
+
+        for (const pos of symmetricPositions) {
+          if (pos.x >= 0 && pos.x < BOARD_SIZE && pos.y >= 0 && pos.y < BOARD_SIZE) {
+            const key = `${pos.x},${pos.y}`;
+            if (!pixelSet.has(key)) {
+              pixelSet.add(key);
+              pixels.push({ x: pos.x, y: pos.y });
             }
           }
         }
