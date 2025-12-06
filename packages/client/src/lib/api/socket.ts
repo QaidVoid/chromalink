@@ -9,6 +9,7 @@ import {
   showError,
   users,
 } from "$lib/stores";
+import { authTokenStore } from "$lib/stores/user";
 import { leaveRoom } from "$lib/utils";
 
 let socket: Socket | null = null;
@@ -17,6 +18,10 @@ export const initSocket = () => {
   if (socket) return socket;
 
   socket = io();
+
+  socket.on("user-authenticated", (data: { userId: string; token: string }) => {
+    authTokenStore.setToken(data.token);
+  });
 
   socket.on("rooms-list", (list) => rooms.set(list));
 

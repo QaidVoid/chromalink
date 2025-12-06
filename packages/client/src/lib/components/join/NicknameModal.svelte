@@ -1,6 +1,7 @@
 <script lang="ts">
   import { getSocket } from "$lib/api/socket";
   import { nickname, showError } from "$lib/stores";
+  import { authTokenStore } from "$lib/stores/user";
   import { validateNickname } from "$lib/api/validation";
 
   let { onComplete }: { onComplete?: () => void } = $props();
@@ -17,7 +18,8 @@
       return;
     }
 
-    socket.emit("set-nickname", { nickname: newNickname });
+    const token = authTokenStore.getToken();
+    socket.emit("set-nickname", { token, nickname: newNickname });
     nickname.set(newNickname);
     onComplete?.();
   };

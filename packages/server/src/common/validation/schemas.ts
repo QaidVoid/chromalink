@@ -5,6 +5,7 @@ import {
   maxValue,
   minLength,
   minValue,
+  nullable,
   number,
   object,
   optional,
@@ -15,6 +16,7 @@ import {
 } from "valibot";
 
 export const NicknameSchema = object({
+  token: optional(nullable(string())),
   nickname: pipe(
     string(),
     trim(),

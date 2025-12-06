@@ -1,23 +1,47 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, OnModuleInit } from "@nestjs/common";
 import { DEFAULT_ROOMS, SYSTEM_ADMIN_ID } from "src/rooms/rooms.constants";
 import type { Room, RoomListItem } from "src/rooms/rooms.interface";
+import { DatabaseService } from "src/database/database.service";
 
 @Injectable()
-export class RoomsService {
+export class RoomsService implements OnModuleInit {
   private rooms: Map<string, Room> = new Map();
 
-  constructor() {
+  constructor(private readonly databaseService: DatabaseService) {}
+
+  async onModuleInit() {
+    await this.loadRoomsFromDatabase();
+
     for (const { id, name } of DEFAULT_ROOMS) {
-      this.createRoom(id, name, SYSTEM_ADMIN_ID);
+      if (!this.roomExists(id)) {
+        await this.createRoom(id, name, SYSTEM_ADMIN_ID);
+      }
     }
   }
 
-  createRoom(
+  private async loadRoomsFromDatabase() {
+    const dbRooms = await this.databaseService.getAllRooms();
+    for (const dbRoom of dbRooms) {
+      const room: Room = {
+        id: dbRoom.id,
+        name: dbRoom.name,
+        userCount: 0,
+        createdAt: new Date(dbRoom.created_at),
+        adminId: dbRoom.admin_id,
+        isLocked: Boolean(dbRoom.is_locked),
+        allowedUsers: new Set<string>(),
+        password: dbRoom.password ?? undefined,
+      };
+      this.rooms.set(room.id, room);
+    }
+  }
+
+  async createRoom(
     id: string,
     name: string,
     adminId: string,
     password?: string,
-  ): Room {
+  ): Promise<Room> {
     const room: Room = {
       id,
       name,
@@ -28,6 +52,20 @@ export class RoomsService {
       allowedUsers: new Set<string>(),
       password,
     };
+
+    try {
+      await this.databaseService.createRoom({
+        id,
+        name,
+        admin_id: adminId,
+        password: password ?? null,
+        is_locked: 0,
+      });
+    } catch (error) {
+      console.error("Database error creating room:", error);
+      throw error;
+    }
+
     this.rooms.set(id, room);
     return room;
   }
@@ -70,20 +108,22 @@ export class RoomsService {
     return room?.adminId === userId;
   }
 
-  lockRoom(roomId: string): boolean {
+  async lockRoom(roomId: string): Promise<boolean> {
     const room = this.rooms.get(roomId);
     if (room) {
       room.isLocked = true;
+      await this.databaseService.updateRoom(roomId, { is_locked: 1 });
       return true;
     }
     return false;
   }
 
-  unlockRoom(roomId: string): boolean {
+  async unlockRoom(roomId: string): Promise<boolean> {
     const room = this.rooms.get(roomId);
     if (room) {
       room.isLocked = false;
       room.allowedUsers.clear();
+      await this.databaseService.updateRoom(roomId, { is_locked: 0 });
       return true;
     }
     return false;
@@ -112,9 +152,10 @@ export class RoomsService {
     return false;
   }
 
-  deleteRoom(roomId: string): boolean {
+  async deleteRoom(roomId: string): Promise<boolean> {
     const room = this.rooms.get(roomId);
     if (room?.adminId !== SYSTEM_ADMIN_ID) {
+      await this.databaseService.deleteRoom(roomId);
       return this.rooms.delete(roomId);
     }
     return false;

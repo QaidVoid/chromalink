@@ -5,7 +5,8 @@ export interface Pixel {
 }
 
 export interface User {
-  id: string;
+  id: string; // socket id
+  userId: string;
   nickname: string;
   x: number;
   y: number;

@@ -1,13 +1,35 @@
 import assert from "node:assert";
-import { Injectable } from "@nestjs/common";
+import { Injectable, OnModuleInit } from "@nestjs/common";
 import { DEFAULT_USER_COLOR } from "src/board/board.constants";
 import type { Pixel, User } from "src/board/board.interface";
+import { DatabaseService } from "src/database/database.service";
 
 @Injectable()
-export class BoardService {
+export class BoardService implements OnModuleInit {
   private boards: Map<string, Map<string, string>> = new Map();
   private users: Map<string, Map<string, User>> = new Map();
   private nicknames: Map<string, string> = new Map();
+
+  constructor(private readonly databaseService: DatabaseService) {}
+
+  async onModuleInit() {
+    await this.loadBoardsFromDatabase();
+  }
+
+  private async loadBoardsFromDatabase() {
+    const allBoards = await this.databaseService.getAllRooms();
+    for (const room of allBoards) {
+      const pixels = await this.databaseService.getBoard(room.id);
+      const boardMap = new Map<string, string>();
+
+      for (const pixel of pixels) {
+        const key = `${pixel.x},${pixel.y}`;
+        boardMap.set(key, pixel.color);
+      }
+
+      this.boards.set(room.id, boardMap);
+    }
+  }
 
   private ensureRoom(roomId: string) {
     if (!this.boards.has(roomId)) {
@@ -19,7 +41,7 @@ export class BoardService {
     }
   }
 
-  getBoard(roomId: string): Pixel[] {
+  async getBoard(roomId: string): Promise<Pixel[]> {
     this.ensureRoom(roomId);
 
     const board = this.boards.get(roomId);
@@ -35,7 +57,12 @@ export class BoardService {
     return pixels;
   }
 
-  setPixel(roomId: string, x: number, y: number, color: string): Pixel {
+  async setPixel(
+    roomId: string,
+    x: number,
+    y: number,
+    color: string,
+  ): Promise<Pixel> {
     this.ensureRoom(roomId);
 
     const key = `${x},${y}`;
@@ -44,11 +71,15 @@ export class BoardService {
     assert(board, "Board not found");
 
     board.set(key, color);
+
+    await this.databaseService.setPixel(roomId, x, y, color);
+
     return { x, y, color };
   }
 
   updateUserCursor(
     roomId: string,
+    socketId: string,
     userId: string,
     x: number,
     y: number,
@@ -59,20 +90,21 @@ export class BoardService {
     const roomUsers = this.users.get(roomId);
     assert(roomUsers, "Room users not found");
 
-    const nickname = this.getNickname(userId);
-    roomUsers.set(userId, { id: userId, nickname, x, y, color });
+    const nickname = this.getNickname(socketId);
+    roomUsers.set(socketId, { id: socketId, userId, nickname, x, y, color });
   }
 
-  addUser(roomId: string, userId: string) {
+  addUser(roomId: string, socketId: string, userId: string) {
     this.ensureRoom(roomId);
 
     const roomUsers = this.users.get(roomId);
     assert(roomUsers, "Room users not found");
 
-    const nickname = this.getNickname(userId);
+    const nickname = this.getNickname(socketId);
 
-    roomUsers.set(userId, {
-      id: userId,
+    roomUsers.set(socketId, {
+      id: socketId,
+      userId,
       nickname,
       x: 0,
       y: 0,
@@ -97,16 +129,18 @@ export class BoardService {
     return Array.from(roomUsers.values());
   }
 
-  clearBoard(roomId: string) {
+  async clearBoard(roomId: string) {
     this.ensureRoom(roomId);
 
     const board = this.boards.get(roomId);
     assert(board, "Board not found");
 
     board.clear();
+
+    await this.databaseService.clearBoard(roomId);
   }
 
-  deleteRoomData(roomId: string) {
+  async deleteRoomData(roomId: string) {
     this.boards.delete(roomId);
     this.users.delete(roomId);
   }

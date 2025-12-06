@@ -39,7 +39,7 @@ export const roomActions = {
     socket.emit("clear-board");
   },
 
-  showKickConfirmation: (user: { id: string; nickname: string }) => {
+  showKickConfirmation: (user: { id: string; userId: string; nickname: string }) => {
     kickModalState.set({ show: true, user });
   },
 
@@ -55,7 +55,7 @@ export const roomActions = {
           showError("Not connected to server");
           return { show: false, user: null };
         }
-        socket.emit("kick-user", { userId: state.user.id });
+        socket.emit("kick-user", { userId: state.user.userId });
       }
       return { show: false, user: null };
     });

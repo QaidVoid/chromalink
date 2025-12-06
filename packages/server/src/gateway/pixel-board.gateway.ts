@@ -8,6 +8,7 @@ import {
   WebSocketServer,
 } from "@nestjs/websockets";
 import type { Server, Socket } from "socket.io";
+import { AuthService } from "src/common/auth.service";
 import { BoardService } from "src/board/board.service";
 import {
   CreateRoomSchema,
@@ -30,6 +31,7 @@ export class PixelBoardGateway
   private userRooms: Map<string, string> = new Map();
 
   constructor(
+    private readonly authService: AuthService,
     private readonly boardService: BoardService,
     private readonly roomsService: RoomsService,
   ) {}
@@ -47,37 +49,31 @@ export class PixelBoardGateway
     client.emit("rooms-list", this.roomsService.getAllRooms());
   }
 
-  handleDisconnect(client: Socket) {
+  async handleDisconnect(client: Socket) {
     console.log(`Client disconnected: ${client.id}`);
 
     const roomId = this.userRooms.get(client.id);
-    if (!roomId) return;
+    if (!roomId) {
+      this.authService.removeSocketSession(client.id);
+      return;
+    }
 
     const room = this.roomsService.getRoom(roomId);
-    if (!room) return;
+    if (!room) {
+      this.authService.removeSocketSession(client.id);
+      return;
+    }
 
     this.boardService.removeUser(roomId, client.id);
     this.roomsService.decrementUserCount(roomId);
 
-    if (room.adminId === client.id && room.adminId !== "system") {
-      const remainingUsers = this.boardService.getUsers(roomId);
-      if (remainingUsers.length > 0) {
-        room.adminId = remainingUsers[0].id;
-      } else {
-        this.boardService.deleteRoomData(roomId);
-        this.roomsService.deleteRoom(roomId);
-        this.server.emit("rooms-list", this.roomsService.getAllRooms());
-        this.userRooms.delete(client.id);
-        return;
-      }
-    }
-
     this.broadcastRoomUpdate(roomId);
     this.userRooms.delete(client.id);
+    this.authService.removeSocketSession(client.id);
   }
 
   @SubscribeMessage("set-nickname")
-  handleSetNickname(
+  async handleSetNickname(
     @MessageBody() data: unknown,
     @ConnectedSocket() client: Socket,
   ) {
@@ -87,18 +83,40 @@ export class PixelBoardGateway
       return;
     }
 
-    this.boardService.setNickname(client.id, result.output.nickname);
+    try {
+      const authResult = await this.authService.authenticateWithToken(
+        result.output.token,
+        result.output.nickname,
+      );
 
-    const roomId = this.userRooms.get(client.id);
-    if (roomId) {
-      this.server
-        .to(roomId)
-        .emit("users-update", this.boardService.getUsers(roomId));
+      if (!authResult) {
+        client.emit("error", "Authentication failed");
+        return;
+      }
+
+      this.authService.setSocketSession(client.id, authResult.userId);
+
+      this.boardService.setNickname(client.id, result.output.nickname);
+
+      client.emit("user-authenticated", {
+        userId: authResult.userId,
+        token: authResult.token,
+      });
+
+      const roomId = this.userRooms.get(client.id);
+      if (roomId) {
+        this.server
+          .to(roomId)
+          .emit("users-update", this.boardService.getUsers(roomId));
+      }
+    } catch (error) {
+      console.error("Error authenticating user:", error);
+      client.emit("error", "Failed to set nickname");
     }
   }
 
   @SubscribeMessage("join-room")
-  handleJoinRoom(
+  async handleJoinRoom(
     @MessageBody() data: unknown,
     @ConnectedSocket() client: Socket,
   ) {
@@ -120,7 +138,13 @@ export class PixelBoardGateway
       return;
     }
 
-    if (!this.roomsService.canUserJoin(roomId, client.id)) {
+    const userId = this.authService.getUserIdFromSocket(client.id);
+    if (!userId) {
+      client.emit("error", "Not authenticated");
+      return;
+    }
+
+    if (!this.roomsService.canUserJoin(roomId, userId)) {
       client.emit("room-locked", { roomId });
       return;
     }
@@ -139,13 +163,13 @@ export class PixelBoardGateway
 
     client.join(roomId);
     this.userRooms.set(client.id, roomId);
-    this.boardService.addUser(roomId, client.id);
+    this.boardService.addUser(roomId, client.id, userId);
     this.roomsService.incrementUserCount(roomId);
 
     const room = this.roomsService.getRoom(roomId);
-    const isAdmin = this.roomsService.isAdmin(roomId, client.id);
+    const isAdmin = this.roomsService.isAdmin(roomId, userId);
 
-    client.emit("board-state", this.boardService.getBoard(roomId));
+    client.emit("board-state", await this.boardService.getBoard(roomId));
     client.emit("room-joined", {
       roomId,
       room: {
@@ -159,7 +183,7 @@ export class PixelBoardGateway
   }
 
   @SubscribeMessage("create-room")
-  handleCreateRoom(
+  async handleCreateRoom(
     @MessageBody() data: unknown,
     @ConnectedSocket() client: Socket,
   ) {
@@ -176,14 +200,25 @@ export class PixelBoardGateway
       return;
     }
 
-    const room = this.roomsService.createRoom(
-      roomId,
-      roomName,
-      client.id,
-      password && password.trim() !== "" ? password : undefined,
-    );
-    this.server.emit("rooms-list", this.roomsService.getAllRooms());
-    client.emit("room-created", room);
+    const userId = this.authService.getUserIdFromSocket(client.id);
+    if (!userId) {
+      client.emit("error", "Not authenticated");
+      return;
+    }
+
+    try {
+      const room = await this.roomsService.createRoom(
+        roomId,
+        roomName,
+        userId,
+        password && password.trim() !== "" ? password : undefined,
+      );
+      this.server.emit("rooms-list", this.roomsService.getAllRooms());
+      client.emit("room-created", room);
+    } catch (error) {
+      console.error("Error creating room:", error);
+      client.emit("error", "Failed to create room");
+    }
   }
 
   @SubscribeMessage("get-rooms")
@@ -192,37 +227,39 @@ export class PixelBoardGateway
   }
 
   @SubscribeMessage("lock-room")
-  handleLockRoom(@ConnectedSocket() client: Socket) {
+  async handleLockRoom(@ConnectedSocket() client: Socket) {
     const roomId = this.userRooms.get(client.id);
     if (!roomId) {
       client.emit("error", "Not in a room");
       return;
     }
 
-    if (!this.roomsService.isAdmin(roomId, client.id)) {
+    const userId = this.authService.getUserIdFromSocket(client.id);
+    if (!userId || !this.roomsService.isAdmin(roomId, userId)) {
       client.emit("error", "Not authorized");
       return;
     }
 
-    this.roomsService.lockRoom(roomId);
+    await this.roomsService.lockRoom(roomId);
     this.server.to(roomId).emit("room-locked-status", { isLocked: true });
     this.server.emit("rooms-list", this.roomsService.getAllRooms());
   }
 
   @SubscribeMessage("unlock-room")
-  handleUnlockRoom(@ConnectedSocket() client: Socket) {
+  async handleUnlockRoom(@ConnectedSocket() client: Socket) {
     const roomId = this.userRooms.get(client.id);
     if (!roomId) {
       client.emit("error", "Not in a room");
       return;
     }
 
-    if (!this.roomsService.isAdmin(roomId, client.id)) {
+    const userId = this.authService.getUserIdFromSocket(client.id);
+    if (!userId || !this.roomsService.isAdmin(roomId, userId)) {
       client.emit("error", "Not authorized");
       return;
     }
 
-    this.roomsService.unlockRoom(roomId);
+    await this.roomsService.unlockRoom(roomId);
     this.server.to(roomId).emit("room-locked-status", { isLocked: false });
     this.server.emit("rooms-list", this.roomsService.getAllRooms());
   }
@@ -244,35 +281,40 @@ export class PixelBoardGateway
       return;
     }
 
-    if (!this.roomsService.isAdmin(roomId, client.id)) {
+    const userId = this.authService.getUserIdFromSocket(client.id);
+    if (!userId || !this.roomsService.isAdmin(roomId, userId)) {
       client.emit("error", "Not authorized");
       return;
     }
 
-    const { userId } = result.output;
-    this.roomsService.kickUser(roomId, userId);
+    const { userId: targetUserId } = result.output;
+    this.roomsService.kickUser(roomId, targetUserId);
 
-    const userSocket = this.server.sockets.sockets.get(userId);
-    if (userSocket) {
-      userSocket.leave(roomId);
-      userSocket.emit("kicked-from-room", { roomId });
+    const targetSocketId = this.authService.getSocketIdFromUserId(targetUserId);
+    if (targetSocketId) {
+      const userSocket = this.server.sockets.sockets.get(targetSocketId);
+      if (userSocket) {
+        userSocket.leave(roomId);
+        userSocket.emit("kicked-from-room", { roomId });
 
-      this.userRooms.delete(userId);
-      this.boardService.removeUser(roomId, userId);
-      this.roomsService.decrementUserCount(roomId);
-      this.broadcastRoomUpdate(roomId);
+        this.userRooms.delete(targetSocketId);
+        this.boardService.removeUser(roomId, targetSocketId);
+        this.roomsService.decrementUserCount(roomId);
+        this.broadcastRoomUpdate(roomId);
+      }
     }
   }
 
   @SubscribeMessage("delete-room")
-  handleDeleteRoom(@ConnectedSocket() client: Socket) {
+  async handleDeleteRoom(@ConnectedSocket() client: Socket) {
     const roomId = this.userRooms.get(client.id);
     if (!roomId) {
       client.emit("error", "Not in a room");
       return;
     }
 
-    if (!this.roomsService.isAdmin(roomId, client.id)) {
+    const userId = this.authService.getUserIdFromSocket(client.id);
+    if (!userId || !this.roomsService.isAdmin(roomId, userId)) {
       client.emit("error", "Not authorized");
       return;
     }
@@ -280,13 +322,13 @@ export class PixelBoardGateway
     this.server.to(roomId).emit("room-deleted", { roomId });
 
     this.boardService.deleteRoomData(roomId);
-    this.roomsService.deleteRoom(roomId);
+    await this.roomsService.deleteRoom(roomId);
 
     this.server.emit("rooms-list", this.roomsService.getAllRooms());
   }
 
   @SubscribeMessage("draw-pixel")
-  handleDrawPixel(
+  async handleDrawPixel(
     @MessageBody() data: unknown,
     @ConnectedSocket() client: Socket,
   ) {
@@ -303,7 +345,7 @@ export class PixelBoardGateway
     }
 
     try {
-      const pixel = this.boardService.setPixel(
+      const pixel = await this.boardService.setPixel(
         roomId,
         result.output.x,
         result.output.y,
@@ -326,9 +368,13 @@ export class PixelBoardGateway
     const roomId = this.userRooms.get(client.id);
     if (!roomId) return;
 
+    const userId = this.authService.getUserIdFromSocket(client.id);
+    if (!userId) return;
+
     this.boardService.updateUserCursor(
       roomId,
       client.id,
+      userId,
       result.output.x,
       result.output.y,
       result.output.color,
@@ -342,19 +388,20 @@ export class PixelBoardGateway
   }
 
   @SubscribeMessage("clear-board")
-  handleClearBoard(@ConnectedSocket() client: Socket) {
+  async handleClearBoard(@ConnectedSocket() client: Socket) {
     const roomId = this.userRooms.get(client.id);
     if (!roomId) {
       client.emit("error", "Not in a room");
       return;
     }
 
-    if (!this.roomsService.isAdmin(roomId, client.id)) {
+    const userId = this.authService.getUserIdFromSocket(client.id);
+    if (!userId || !this.roomsService.isAdmin(roomId, userId)) {
       client.emit("error", "Not authorized");
       return;
     }
 
-    this.boardService.clearBoard(roomId);
+    await this.boardService.clearBoard(roomId);
     this.server.to(roomId).emit("board-cleared");
   }
 }
