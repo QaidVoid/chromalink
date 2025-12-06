@@ -81,9 +81,19 @@ export const KickUserSchema = object({
   userId: pipe(string(), minLength(1, "User ID cannot be empty")),
 });
 
+export const ChatMessageSchema = object({
+  message: pipe(
+    string(),
+    trim(),
+    minLength(1, "Message cannot be empty"),
+    maxLength(500, "Message must be 500 characters or less"),
+  ),
+});
+
 export type NicknameInput = InferOutput<typeof NicknameSchema>;
 export type CreateRoomInput = InferOutput<typeof CreateRoomSchema>;
 export type JoinRoomInput = InferOutput<typeof JoinRoomSchema>;
 export type DrawPixelInput = InferOutput<typeof DrawPixelSchema>;
 export type CursorMoveInput = InferOutput<typeof CursorMoveSchema>;
 export type KickUserInput = InferOutput<typeof KickUserSchema>;
+export type ChatMessageInput = InferOutput<typeof ChatMessageSchema>;

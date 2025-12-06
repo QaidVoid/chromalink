@@ -1,5 +1,6 @@
 import { io, type Socket } from "socket.io-client";
 import {
+  chatMessages,
   currentRoom,
   cursors,
   isAdmin,
@@ -29,6 +30,7 @@ export const initSocket = () => {
     currentRoom.set(data.room);
     isAdmin.set(data.room.isAdmin || false);
     isRoomLocked.set(data.room.isLocked || false);
+    chatMessages.set([]);
   });
 
   socket.on("board-state", (boardPixels) => {
@@ -98,6 +100,10 @@ export const initSocket = () => {
 
   socket.on("password-incorrect", (data) => {
     showError(`Incorrect password for room ${data.roomId}`);
+  });
+
+  socket.on("chat-message", (data) => {
+    chatMessages.update((messages) => [...messages, data]);
   });
 
   return socket;

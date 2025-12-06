@@ -5,6 +5,7 @@ export type Pixel = { x: number; y: number; color: string };
 
 export type User = {
   id: string;
+  userId: string;
   nickname: string;
 };
 

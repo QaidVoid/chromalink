@@ -61,12 +61,10 @@
   class="min-h-screen flex items-center justify-center p-8 relative overflow-hidden"
   style="background: var(--bg-primary);"
 >
-  <!-- Theme toggle in top right -->
   <div class="absolute top-4 right-4 z-20">
     <ThemeToggle />
   </div>
 
-  <!-- Background decorative elements -->
   <div class="absolute inset-0 overflow-hidden pointer-events-none opacity-10">
     <div
       class="absolute top-20 left-10 w-96 h-96 rounded-full blur-3xl"

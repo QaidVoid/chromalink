@@ -11,6 +11,7 @@ import type { Server, Socket } from "socket.io";
 import { AuthService } from "src/common/auth.service";
 import { BoardService } from "src/board/board.service";
 import {
+  ChatMessageSchema,
   CreateRoomSchema,
   CursorMoveSchema,
   DrawPixelSchema,
@@ -403,5 +404,38 @@ export class PixelBoardGateway
 
     await this.boardService.clearBoard(roomId);
     this.server.to(roomId).emit("board-cleared");
+  }
+
+  @SubscribeMessage("send-message")
+  handleChatMessage(
+    @MessageBody() data: unknown,
+    @ConnectedSocket() client: Socket,
+  ) {
+    const result = safeParse(ChatMessageSchema, data);
+    if (!result.success) {
+      client.emit("error", result.issues[0]?.message || "Invalid message");
+      return;
+    }
+
+    const roomId = this.userRooms.get(client.id);
+    if (!roomId) {
+      client.emit("error", "Not in a room");
+      return;
+    }
+
+    const userId = this.authService.getUserIdFromSocket(client.id);
+    if (!userId) {
+      client.emit("error", "Not authenticated");
+      return;
+    }
+
+    const nickname = this.boardService.getNickname(client.id);
+
+    this.server.to(roomId).emit("chat-message", {
+      userId,
+      nickname,
+      message: result.output.message,
+      timestamp: new Date().toISOString(),
+    });
   }
 }

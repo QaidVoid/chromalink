@@ -1,12 +1,10 @@
 import { writable } from "svelte/store";
 import { DRAWING_COLORS } from "$lib/theme/colors";
+import type { User } from "$lib/stores/board";
 
 type KickModalState = {
   show: boolean;
-  user: {
-    id: string;
-    nickname: string;
-  } | null;
+  user: User | null;
 };
 
 export const kickModalState = writable<KickModalState>({

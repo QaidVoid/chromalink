@@ -1,10 +1,10 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import Canvas from "$lib/components/board/Canvas.svelte";
+  import Chat from "$lib/components/room/Chat.svelte";
   import ColorPalette from "$lib/components/room/ColorPalette.svelte";
   import Header from "$lib/components/room/Header.svelte";
   import KickModal from "$lib/components/room/KickModal.svelte";
-  import TipsPanel from "$lib/components/room/TipsPanel.svelte";
   import UserList from "$lib/components/room/UserList.svelte";
   import { getSocket } from "$lib/api/socket";
   import { currentRoom } from "$lib/stores";
@@ -50,13 +50,19 @@
     </div>
 
     <div
-      class="w-80 shrink-0 border-l-2 shadow-lg overflow-y-auto"
+      class="w-80 shrink-0 border-l-2 shadow-lg flex flex-col"
       style="background: var(--bg-secondary); border-color: var(--border-primary);"
     >
-      <div class="p-6 space-y-6">
+      <div class="p-4">
         <ColorPalette />
-        <TipsPanel />
-        <UserList />
+      </div>
+      <div class="flex-1 flex flex-col min-h-0 p-4 pt-0 gap-4">
+        <div class="shrink-0">
+          <UserList />
+        </div>
+        <div class="flex-1 min-h-0">
+          <Chat />
+        </div>
       </div>
     </div>
   </div>
